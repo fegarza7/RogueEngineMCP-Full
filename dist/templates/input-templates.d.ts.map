@@ -1,0 +1,1 @@
+{"version":3,"file":"input-templates.d.ts","sourceRoot":"","sources":["../../src/templates/input-templates.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,MAAM,WAAW,uBAAuB;IACtC,IAAI,EAAE,MAAM,CAAC;IACb,WAAW,EAAE,OAAO,CAAC;IACrB,UAAU,EAAE,QAAQ,GAAG,cAAc,CAAC;CACvC;AAED,wBAAgB,gCAAgC,CAAC,OAAO,EAAE,uBAAuB,GAAG,MAAM,CAyLzF"}

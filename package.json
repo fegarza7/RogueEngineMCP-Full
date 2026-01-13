@@ -1,29 +1,14 @@
 {
-  "name": "rogueengine-mcp-server",
+  "name": "RogueEngineMCP-Full",
   "version": "1.0.0",
-  "description": "MCP server for RogueEngine game development framework",
-  "type": "module",
+  "description": "",
   "main": "dist/index.js",
-  "bin": {
-    "rogueengine-mcp": "dist/index.js"
-  },
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "prepare": "npm run build"
+    "build": "tsc"
   },
-  "keywords": [
-    "mcp",
-    "rogueengine",
-    "game-development"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^22.10.5",
-    "typescript": "^5.7.3"
-  }
+    "typescript": "^5.5.3"
+  },
+  "private": true
 }
