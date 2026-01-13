@@ -4,12 +4,19 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+// Import documentation data
 import { formatClassInfo, formatDecorators, formatLifecycle, formatCategories, formatSearchResults, searchDocs, } from './docs-data.js';
+// Import template generators
 import { generatePlayerControllerTemplate } from './templates/input-templates.js';
 import { generatePickingSystemTemplate, generatePrefabSpawnerTemplate, generateObjectPoolTemplate, generateTagFilterTemplate, } from './templates/gameplay-templates.js';
 import { generateAudioManagerTemplate, generateEventManagerTemplate, generateGameManagerTemplate, } from './templates/manager-templates.js';
-// Tool definitions for RogueEngine operations
+// ============================================================================
+// TOOL DEFINITIONS (18 Total)
+// ============================================================================
 const TOOLS = [
+    // -------------------------------------------------------------------------
+    // CORE TOOLS (5)
+    // -------------------------------------------------------------------------
     {
         name: 'create_component',
         description: 'Create a new RogueEngine component TypeScript file with proper structure and imports',
@@ -110,26 +117,25 @@ const TOOLS = [
                 },
                 propertyType: {
                     type: 'string',
-                    description: 'TypeScript type of the property (e.g., number, string, THREE.Vector3, RE.Prefab)',
+                    description: 'TypeScript type of the property (e.g., number, string, THREE.Vector3)',
                 },
                 decorator: {
                     type: 'string',
-                    enum: ['num', 'text', 'checkbox', 'select', 'vector2', 'vector3', 'color',
-                        'object3d', 'component', 'prefab', 'audio', 'material', 'texture'],
-                    description: 'Decorator type to use (without @RE.props. prefix)',
+                    enum: ['num', 'text', 'checkbox', 'select', 'vector2', 'vector3', 'color', 'object3d', 'component', 'prefab', 'audio', 'material', 'texture'],
+                    description: 'RE property decorator to use',
                     default: 'num',
                 },
                 defaultValue: {
                     type: 'string',
-                    description: 'Optional default value for the property',
+                    description: 'Default value for the property (optional)',
                 },
             },
             required: ['filePath', 'propertyName', 'propertyType'],
         },
     },
-    // ============================================================================
-    // DOCUMENTATION TOOLS
-    // ============================================================================
+    // -------------------------------------------------------------------------
+    // DOCUMENTATION TOOLS (5)
+    // -------------------------------------------------------------------------
     {
         name: 'get_re_class_info',
         description: 'Get detailed information about a Rogue Engine class including properties, methods, and examples',
@@ -138,10 +144,8 @@ const TOOLS = [
             properties: {
                 className: {
                     type: 'string',
-                    description: 'The Rogue Engine class name to look up',
-                    enum: ['App', 'Component', 'VisualComponent', 'Input', 'Mouse', 'Keyboard',
-                        'TouchController', 'GamepadController', 'Prefab', 'Runtime',
-                        'SceneController', 'Debug', 'Tags', 'AudioAsset', 'Functions', 'Events'],
+                    enum: ['App', 'Component', 'VisualComponent', 'Input', 'Mouse', 'Keyboard', 'TouchController', 'GamepadController', 'Prefab', 'Runtime', 'SceneController', 'Debug', 'Tags', 'AudioAsset', 'Functions', 'Events'],
+                    description: 'Name of the RE class to get info about',
                 },
             },
             required: ['className'],
@@ -158,7 +162,7 @@ const TOOLS = [
     },
     {
         name: 'get_re_lifecycle',
-        description: 'Get Component lifecycle methods (awake, start, update, etc.) with descriptions and when they are called',
+        description: 'Get Component lifecycle methods (awake, start, update, etc.) with descriptions and execution order',
         inputSchema: {
             type: 'object',
             properties: {},
@@ -173,7 +177,7 @@ const TOOLS = [
             properties: {
                 query: {
                     type: 'string',
-                    description: 'Search query (e.g., "deltaTime", "prefab instantiate", "keyboard input")',
+                    description: 'Search query (e.g., "deltaTime", "prefab instantiate")',
                 },
             },
             required: ['query'],
@@ -188,9 +192,9 @@ const TOOLS = [
             required: [],
         },
     },
-    // ============================================================================
-    // SCAFFOLDING TOOLS
-    // ============================================================================
+    // -------------------------------------------------------------------------
+    // SCAFFOLDING TOOLS (8)
+    // -------------------------------------------------------------------------
     {
         name: 'create_picking_system',
         description: 'Create a tag-filtered object picking system with raycasting and hover highlighting',
@@ -203,11 +207,11 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
                 selectableTag: {
                     type: 'string',
-                    description: 'Tag to filter selectable objects',
+                    description: 'Tag to filter selectable objects (default: "Selectable")',
                     default: 'Selectable',
                 },
             },
@@ -226,11 +230,11 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
                 spawnOnStart: {
                     type: 'boolean',
-                    description: 'Whether to spawn instances when the component starts',
+                    description: 'Whether to spawn instances on component start',
                     default: false,
                 },
             },
@@ -249,7 +253,7 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
                 trackCount: {
                     type: 'number',
@@ -272,7 +276,7 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
             },
             required: ['name', 'directory'],
@@ -290,7 +294,7 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
                 includeSceneManagement: {
                     type: 'boolean',
@@ -313,16 +317,16 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
                 initialSize: {
                     type: 'number',
-                    description: 'Initial number of objects in the pool',
+                    description: 'Initial pool size',
                     default: 10,
                 },
                 autoGrow: {
                     type: 'boolean',
-                    description: 'Whether the pool can grow when exhausted',
+                    description: 'Allow pool to grow when exhausted',
                     default: true,
                 },
             },
@@ -341,7 +345,7 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
             },
             required: ['name', 'directory'],
@@ -359,7 +363,7 @@ const TOOLS = [
                 },
                 directory: {
                     type: 'string',
-                    description: 'Directory path where the component should be created',
+                    description: 'Directory path for the component',
                 },
                 includeJump: {
                     type: 'boolean',
@@ -369,7 +373,7 @@ const TOOLS = [
                 inputStyle: {
                     type: 'string',
                     enum: ['direct', 'action-based'],
-                    description: 'Input style: direct (device-specific) or action-based (device-agnostic)',
+                    description: 'Input style: direct or action-based',
                     default: 'action-based',
                 },
             },
@@ -377,7 +381,9 @@ const TOOLS = [
         },
     },
 ];
-// Generate component template
+// ============================================================================
+// TEMPLATE GENERATORS (Core Tools)
+// ============================================================================
 function generateComponentTemplate(name, isVisual) {
     const baseClass = isVisual ? 'VisualComponent' : 'Component';
     return `import * as RE from 'rogue-engine';
@@ -407,7 +413,6 @@ export default class ${name} extends RE.${baseClass} {
 RE.registerComponent(${name});
 `;
 }
-// Generate scene controller template
 function generateSceneControllerTemplate(name) {
     return `import * as RE from 'rogue-engine';
 
@@ -433,178 +438,95 @@ export default class ${name} extends RE.SceneController {
 RE.registerSceneController(${name});
 `;
 }
-// Generate input handler template
 function generateInputHandlerTemplate(name, inputType, inputStyle = 'direct') {
-    let inputCode = '';
-    let properties = '';
     if (inputStyle === 'action-based') {
-        // Action-based input uses RE.Input.getDown/getPressed/getUp with action names
-        // Actions are defined in the Rogue Engine Input Manager
-        switch (inputType) {
-            case 'keyboard':
-                inputCode = `
+        return `import * as RE from 'rogue-engine';
+
+// Action-based input handler - device agnostic
+export default class ${name} extends RE.Component {
+
+  // Action mappings
+  private actions = new Map<string, () => boolean>();
+
+  awake() {
+    this.setupActions();
+  }
+
+  private setupActions() {
+    // Define actions that can be triggered by multiple input sources
+    this.actions.set('jump', () =>
+      RE.Input.keyboard.getKeyDown('Space') ||
+      RE.Input.gamepad.getButtonDown(0)
+    );
+
+    this.actions.set('attack', () =>
+      RE.Input.mouse.getButtonDown(0) ||
+      RE.Input.gamepad.getButtonDown(2)
+    );
+
+    this.actions.set('interact', () =>
+      RE.Input.keyboard.getKeyDown('KeyE') ||
+      RE.Input.gamepad.getButtonDown(1)
+    );
+  }
+
+  // Check if an action is triggered
+  isActionTriggered(actionName: string): boolean {
+    const action = this.actions.get(actionName);
+    return action ? action() : false;
+  }
+
+  // Get movement vector (normalized, device-agnostic)
+  getMovementVector(): { x: number, y: number } {
+    let x = 0, y = 0;
+
+    // Keyboard input
+    if (RE.Input.keyboard.getKey('KeyW') || RE.Input.keyboard.getKey('ArrowUp')) y += 1;
+    if (RE.Input.keyboard.getKey('KeyS') || RE.Input.keyboard.getKey('ArrowDown')) y -= 1;
+    if (RE.Input.keyboard.getKey('KeyA') || RE.Input.keyboard.getKey('ArrowLeft')) x -= 1;
+    if (RE.Input.keyboard.getKey('KeyD') || RE.Input.keyboard.getKey('ArrowRight')) x += 1;
+
+    // Gamepad input (overrides if significant)
+    const gx = RE.Input.gamepad.getAxis(0);
+    const gy = RE.Input.gamepad.getAxis(1);
+    if (Math.abs(gx) > 0.1 || Math.abs(gy) > 0.1) {
+      x = gx;
+      y = -gy; // Invert Y for standard game coordinates
+    }
+
+    // Normalize
+    const length = Math.sqrt(x * x + y * y);
+    if (length > 1) {
+      x /= length;
+      y /= length;
+    }
+
+    return { x, y };
+  }
+
   update() {
-    // Action-based keyboard input (device-agnostic)
-    // Configure actions in Input Manager to map keys to action names
-    if (RE.Input.getDown("Jump")) {
-      console.log("Jump action triggered");
-      this.onJump();
+    // Example usage
+    if (this.isActionTriggered('jump')) {
+      console.log('Jump action triggered!');
     }
 
-    if (RE.Input.getPressed("Forward")) {
-      console.log("Forward action held");
-      this.onMoveForward();
-    }
-
-    if (RE.Input.getUp("Interact")) {
-      console.log("Interact action released");
-    }
-
-    // Axis-based movement (returns -1 to 1)
-    const horizontal = RE.Input.getAxis("Horizontal");
-    const vertical = RE.Input.getAxis("Vertical");
-    if (Math.abs(horizontal) > 0.1 || Math.abs(vertical) > 0.1) {
-      this.onMove(horizontal, vertical);
+    const movement = this.getMovementVector();
+    if (movement.x !== 0 || movement.y !== 0) {
+      console.log('Movement:', movement);
     }
   }
+}
 
-  onJump() {
-    // Implement jump logic
-  }
-
-  onMoveForward() {
-    // Implement forward movement
-  }
-
-  onMove(horizontal: number, vertical: number) {
-    // Implement axis-based movement
-    // Use RE.Runtime.deltaTime for frame-independent movement
-  }`;
-                break;
-            case 'mouse':
-                inputCode = `
+RE.registerComponent(${name});
+`;
+    }
+    // Direct input style (original)
+    let inputCode = '';
+    switch (inputType) {
+        case 'keyboard':
+            inputCode = `
   update() {
-    // Action-based mouse input
-    if (RE.Input.getDown("Select")) {
-      console.log("Select action triggered");
-      // Mouse position still available via RE.Input.mouse
-      const mouseX = RE.Input.mouse.x;
-      const mouseY = RE.Input.mouse.y;
-      this.onSelect(mouseX, mouseY);
-    }
-
-    if (RE.Input.getDown("AltAction")) {
-      console.log("Alt action triggered");
-    }
-
-    // Mouse movement delta for look/rotation
-    const lookX = RE.Input.mouse.movementX;
-    const lookY = RE.Input.mouse.movementY;
-    if (lookX !== 0 || lookY !== 0) {
-      this.onLook(lookX, lookY);
-    }
-  }
-
-  onSelect(x: number, y: number) {
-    // Implement selection logic at screen coordinates
-  }
-
-  onLook(deltaX: number, deltaY: number) {
-    // Implement look/rotation logic
-  }`;
-                break;
-            case 'gamepad':
-                inputCode = `
-  update() {
-    // Action-based gamepad input (works with keyboard too)
-    if (RE.Input.getDown("Jump")) {
-      this.onJump();
-    }
-
-    if (RE.Input.getDown("Attack")) {
-      this.onAttack();
-    }
-
-    // Axis input (works for both gamepad sticks and keyboard WASD)
-    const moveX = RE.Input.getAxis("Horizontal");
-    const moveY = RE.Input.getAxis("Vertical");
-    const lookX = RE.Input.getAxis("LookHorizontal");
-    const lookY = RE.Input.getAxis("LookVertical");
-
-    if (Math.abs(moveX) > 0.1 || Math.abs(moveY) > 0.1) {
-      this.onMove(moveX, moveY);
-    }
-
-    if (Math.abs(lookX) > 0.1 || Math.abs(lookY) > 0.1) {
-      this.onLook(lookX, lookY);
-    }
-  }
-
-  onJump() {
-    // Implement jump
-  }
-
-  onAttack() {
-    // Implement attack
-  }
-
-  onMove(x: number, y: number) {
-    // Implement movement using deltaTime
-    // const speed = 5 * RE.Runtime.deltaTime;
-  }
-
-  onLook(x: number, y: number) {
-    // Implement camera/character rotation
-  }`;
-                break;
-            case 'touch':
-                inputCode = `
-  update() {
-    // Action-based touch input
-    if (RE.Input.getDown("Select")) {
-      // Touch triggers Select action
-      const touch = RE.Input.touch.touches[0];
-      if (touch) {
-        this.onTap(touch.x, touch.y);
-      }
-    }
-
-    // Virtual joystick axes (configure in Input Manager)
-    const moveX = RE.Input.getAxis("Horizontal");
-    const moveY = RE.Input.getAxis("Vertical");
-
-    if (Math.abs(moveX) > 0.1 || Math.abs(moveY) > 0.1) {
-      this.onMove(moveX, moveY);
-    }
-
-    // Multi-touch gestures
-    const touches = RE.Input.touch.touches;
-    if (touches.length === 2) {
-      this.onPinch(touches);
-    }
-  }
-
-  onTap(x: number, y: number) {
-    // Implement tap selection
-  }
-
-  onMove(x: number, y: number) {
-    // Implement touch-based movement
-  }
-
-  onPinch(touches: readonly { x: number; y: number }[]) {
-    // Implement pinch zoom/rotate
-  }`;
-                break;
-        }
-    }
-    else {
-        // Direct input (device-specific API calls)
-        switch (inputType) {
-            case 'keyboard':
-                inputCode = `
-  update() {
-    // Direct keyboard input
+    // Check keyboard input
     if (RE.Input.keyboard.getKeyDown("Space")) {
       console.log("Space pressed!");
     }
@@ -617,11 +539,11 @@ function generateInputHandlerTemplate(name, inputType, inputStyle = 'direct') {
       console.log("Escape released!");
     }
   }`;
-                break;
-            case 'mouse':
-                inputCode = `
+            break;
+        case 'mouse':
+            inputCode = `
   update() {
-    // Direct mouse input
+    // Check mouse input
     if (RE.Input.mouse.getButtonDown(0)) {
       console.log("Left mouse button pressed");
       console.log("Mouse position:", RE.Input.mouse.x, RE.Input.mouse.y);
@@ -636,11 +558,11 @@ function generateInputHandlerTemplate(name, inputType, inputStyle = 'direct') {
       console.log("Mouse wheel:", scrollDelta);
     }
   }`;
-                break;
-            case 'gamepad':
-                inputCode = `
+            break;
+        case 'gamepad':
+            inputCode = `
   update() {
-    // Direct gamepad input
+    // Check gamepad input
     const gamepad = RE.Input.gamepad;
 
     if (gamepad.getButtonDown(0)) {
@@ -654,11 +576,11 @@ function generateInputHandlerTemplate(name, inputType, inputStyle = 'direct') {
       console.log("Left stick:", leftStickX, leftStickY);
     }
   }`;
-                break;
-            case 'touch':
-                inputCode = `
+            break;
+        case 'touch':
+            inputCode = `
   update() {
-    // Direct touch input
+    // Check touch input
     const touches = RE.Input.touch.touches;
 
     for (let i = 0; i < touches.length; i++) {
@@ -674,8 +596,7 @@ function generateInputHandlerTemplate(name, inputType, inputStyle = 'direct') {
       console.log("Touch ended");
     }
   }`;
-                break;
-        }
+            break;
     }
     return `import * as RE from 'rogue-engine';
 
@@ -686,7 +607,7 @@ export default class ${name} extends RE.Component {
   }
 
   start() {
-    // Setup${inputStyle === 'action-based' ? '\n    // Note: Configure actions in Rogue Engine Input Manager' : ''}
+    // Setup
   }
 ${inputCode}
 
@@ -698,7 +619,25 @@ ${inputCode}
 RE.registerComponent(${name});
 `;
 }
-// Server implementation
+// Decorator mappings for add_component_property
+const DECORATOR_MAP = {
+    num: '@RE.props.num()',
+    text: '@RE.props.text()',
+    checkbox: '@RE.props.checkbox()',
+    select: '@RE.props.select()',
+    vector2: '@RE.props.vector2()',
+    vector3: '@RE.props.vector3()',
+    color: '@RE.props.color()',
+    object3d: '@RE.props.object3d()',
+    component: '@RE.props.component()',
+    prefab: '@RE.props.prefab()',
+    audio: '@RE.props.audio()',
+    material: '@RE.props.material()',
+    texture: '@RE.props.texture()',
+};
+// ============================================================================
+// SERVER IMPLEMENTATION
+// ============================================================================
 const server = new Server({
     name: 'rogueengine-mcp-server',
     version: '1.0.0',
@@ -716,9 +655,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     try {
         switch (name) {
+            // -----------------------------------------------------------------
+            // CORE TOOLS
+            // -----------------------------------------------------------------
             case 'create_component': {
                 const { name: componentName, directory, isVisual = false } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateComponentTemplate(componentName, isVisual);
                 await fs.mkdir(directory, { recursive: true });
@@ -734,7 +676,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_scene_controller': {
                 const { name: controllerName, directory } = args;
-                const fileName = `${controllerName}.ts`;
+                const fileName = `${controllerName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateSceneControllerTemplate(controllerName);
                 await fs.mkdir(directory, { recursive: true });
@@ -755,11 +697,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     const entries = await fs.readdir(dir, { withFileTypes: true });
                     for (const entry of entries) {
                         const fullPath = path.join(dir, entry.name);
-                        const relativePath = path.relative(projectPath, fullPath);
                         const indent = '  '.repeat(depth);
                         if (entry.isDirectory()) {
+                            if (entry.name === 'node_modules' || entry.name === '.git')
+                                continue;
                             items.push(`${indent}📁 ${entry.name}/`);
-                            if (depth < 3) { // Limit recursion depth
+                            if (depth < 3) {
                                 const subItems = await scanDirectory(fullPath, depth + 1);
                                 items.push(...subItems);
                             }
@@ -771,10 +714,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                                 icon = '📘';
                             else if (ext === '.json')
                                 icon = '📋';
-                            else if (['.png', '.jpg', '.jpeg'].includes(ext))
+                            else if (ext === '.rogueScene')
+                                icon = '🎬';
+                            else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext))
                                 icon = '🖼️';
                             else if (['.mp3', '.wav', '.ogg'].includes(ext))
                                 icon = '🔊';
+                            else if (['.glb', '.gltf', '.fbx'].includes(ext))
+                                icon = '🎨';
                             items.push(`${indent}${icon} ${entry.name}`);
                         }
                     }
@@ -793,7 +740,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'generate_input_handler': {
                 const { name: handlerName, directory, inputType, inputStyle = 'direct' } = args;
-                const fileName = `${handlerName}.ts`;
+                const fileName = `${handlerName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateInputHandlerTemplate(handlerName, inputType, inputStyle);
                 await fs.mkdir(directory, { recursive: true });
@@ -802,7 +749,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     content: [
                         {
                             type: 'text',
-                            text: `Created ${inputType} input handler (${inputStyle}): ${fullPath}\n\n${content}`,
+                            text: `Created ${inputStyle} ${inputType} input handler: ${fullPath}\n\n${content}`,
                         },
                     ],
                 };
@@ -810,23 +757,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case 'add_component_property': {
                 const { filePath, propertyName, propertyType, decorator = 'num', defaultValue } = args;
                 const content = await fs.readFile(filePath, 'utf-8');
-                // Find the class body to insert the property
+                const decoratorCode = DECORATOR_MAP[decorator] || '@RE.props.num()';
                 const classMatch = content.match(/class\s+\w+\s+extends\s+RE\.\w+\s*{/);
                 if (!classMatch) {
                     throw new Error('Could not find class definition in file');
                 }
-                // Format the decorator properly
-                const decoratorStr = `@RE.props.${decorator}()`;
-                // Build the property line with optional default value
-                let propertyLine;
-                if (defaultValue) {
-                    propertyLine = `${propertyName}: ${propertyType} = ${defaultValue};`;
-                }
-                else {
-                    propertyLine = `${propertyName}: ${propertyType};`;
-                }
                 const insertPosition = classMatch.index + classMatch[0].length;
-                const propertyCode = `\n  ${decoratorStr}\n  ${propertyLine}\n`;
+                const valueStr = defaultValue ? ` = ${defaultValue}` : '';
+                const propertyCode = `\n\n  ${decoratorCode}\n  ${propertyName}: ${propertyType}${valueStr};`;
                 const newContent = content.slice(0, insertPosition) +
                     propertyCode +
                     content.slice(insertPosition);
@@ -835,31 +773,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     content: [
                         {
                             type: 'text',
-                            text: `Added property '${propertyName}: ${propertyType}' with @RE.props.${decorator}() to ${filePath}`,
+                            text: `Added property '${propertyName}: ${propertyType}' with ${decoratorCode} to ${filePath}`,
                         },
                     ],
                 };
             }
-            // ========================================================================
-            // DOCUMENTATION TOOL HANDLERS
-            // ========================================================================
+            // -----------------------------------------------------------------
+            // DOCUMENTATION TOOLS
+            // -----------------------------------------------------------------
             case 'get_re_class_info': {
                 const { className } = args;
-                const result = formatClassInfo(className);
+                const info = formatClassInfo(className);
                 return {
-                    content: [{ type: 'text', text: result }],
+                    content: [
+                        {
+                            type: 'text',
+                            text: info,
+                        },
+                    ],
                 };
             }
             case 'get_re_decorators': {
-                const result = formatDecorators();
+                const decorators = formatDecorators();
                 return {
-                    content: [{ type: 'text', text: result }],
+                    content: [
+                        {
+                            type: 'text',
+                            text: decorators,
+                        },
+                    ],
                 };
             }
             case 'get_re_lifecycle': {
-                const result = formatLifecycle();
+                const lifecycle = formatLifecycle();
                 return {
-                    content: [{ type: 'text', text: result }],
+                    content: [
+                        {
+                            type: 'text',
+                            text: lifecycle,
+                        },
+                    ],
                 };
             }
             case 'search_re_docs': {
@@ -867,21 +820,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const results = searchDocs(query);
                 const formatted = formatSearchResults(results);
                 return {
-                    content: [{ type: 'text', text: formatted }],
+                    content: [
+                        {
+                            type: 'text',
+                            text: `# Search: "${query}"\n\n${formatted}`,
+                        },
+                    ],
                 };
             }
             case 'list_re_categories': {
-                const result = formatCategories();
+                const categories = formatCategories();
                 return {
-                    content: [{ type: 'text', text: result }],
+                    content: [
+                        {
+                            type: 'text',
+                            text: categories,
+                        },
+                    ],
                 };
             }
-            // ========================================================================
-            // SCAFFOLDING TOOL HANDLERS
-            // ========================================================================
+            // -----------------------------------------------------------------
+            // SCAFFOLDING TOOLS
+            // -----------------------------------------------------------------
             case 'create_picking_system': {
                 const { name: componentName, directory, selectableTag = 'Selectable' } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generatePickingSystemTemplate({ name: componentName, selectableTag });
                 await fs.mkdir(directory, { recursive: true });
@@ -897,7 +860,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_prefab_spawner': {
                 const { name: componentName, directory, spawnOnStart = false } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generatePrefabSpawnerTemplate({ name: componentName, spawnOnStart });
                 await fs.mkdir(directory, { recursive: true });
@@ -913,7 +876,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_audio_manager': {
                 const { name: componentName, directory, trackCount = 3 } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateAudioManagerTemplate({ name: componentName, trackCount });
                 await fs.mkdir(directory, { recursive: true });
@@ -929,7 +892,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_event_manager': {
                 const { name: componentName, directory } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateEventManagerTemplate({ name: componentName });
                 await fs.mkdir(directory, { recursive: true });
@@ -945,7 +908,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_game_manager': {
                 const { name: componentName, directory, includeSceneManagement = true } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateGameManagerTemplate({ name: componentName, includeSceneManagement });
                 await fs.mkdir(directory, { recursive: true });
@@ -961,7 +924,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_object_pool': {
                 const { name: componentName, directory, initialSize = 10, autoGrow = true } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateObjectPoolTemplate({ name: componentName, initialSize, autoGrow });
                 await fs.mkdir(directory, { recursive: true });
@@ -977,7 +940,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_tag_filter': {
                 const { name: componentName, directory } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
                 const content = generateTagFilterTemplate({ name: componentName });
                 await fs.mkdir(directory, { recursive: true });
@@ -993,16 +956,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             case 'create_player_controller': {
                 const { name: componentName, directory, includeJump = true, inputStyle = 'action-based' } = args;
-                const fileName = `${componentName}.ts`;
+                const fileName = `${componentName}.re.ts`;
                 const fullPath = path.join(directory, fileName);
-                const content = generatePlayerControllerTemplate({ name: componentName, includeJump, inputStyle });
+                const content = generatePlayerControllerTemplate({ name: componentName, includeJump, inputStyle: inputStyle });
                 await fs.mkdir(directory, { recursive: true });
                 await fs.writeFile(fullPath, content, 'utf-8');
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: `Created player controller (${inputStyle}): ${fullPath}\n\n${content}`,
+                            text: `Created player controller: ${fullPath}\n\n${content}`,
                         },
                     ],
                 };
@@ -1031,7 +994,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
     }
 });
-// Start the server
+// ============================================================================
+// START SERVER
+// ============================================================================
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);

@@ -1,13 +1,21 @@
 {
-  "name": "RogueEngineMCP-Full",
+  "name": "rogueengine-mcp-full",
   "version": "1.0.0",
-  "description": "",
+  "description": "MCP server for RogueEngine game development with 18 tools",
+  "type": "module",
   "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc"
+  "bin": {
+    "rogueengine-mcp": "dist/index.js"
   },
-  "dependencies": {},
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "typescript": "^5.5.3"
   },
   "private": true
