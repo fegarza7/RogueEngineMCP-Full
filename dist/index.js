@@ -454,19 +454,21 @@ export default class ${name} extends RE.Component {
 
   private setupActions() {
     // Define actions that can be triggered by multiple input sources
+    const gp = () => RE.Input.gamepads[0]; // Helper to get first gamepad
+
     this.actions.set('jump', () =>
       RE.Input.keyboard.getKeyDown('Space') ||
-      RE.Input.gamepad.getButtonDown(0)
+      gp()?.getButtonDown(0) || false
     );
 
     this.actions.set('attack', () =>
       RE.Input.mouse.getButtonDown(0) ||
-      RE.Input.gamepad.getButtonDown(2)
+      gp()?.getButtonDown(2) || false
     );
 
     this.actions.set('interact', () =>
       RE.Input.keyboard.getKeyDown('KeyE') ||
-      RE.Input.gamepad.getButtonDown(1)
+      gp()?.getButtonDown(1) || false
     );
   }
 
@@ -481,14 +483,15 @@ export default class ${name} extends RE.Component {
     let x = 0, y = 0;
 
     // Keyboard input
-    if (RE.Input.keyboard.getKey('KeyW') || RE.Input.keyboard.getKey('ArrowUp')) y += 1;
-    if (RE.Input.keyboard.getKey('KeyS') || RE.Input.keyboard.getKey('ArrowDown')) y -= 1;
-    if (RE.Input.keyboard.getKey('KeyA') || RE.Input.keyboard.getKey('ArrowLeft')) x -= 1;
-    if (RE.Input.keyboard.getKey('KeyD') || RE.Input.keyboard.getKey('ArrowRight')) x += 1;
+    if (RE.Input.keyboard.getKeyPressed('KeyW') || RE.Input.keyboard.getKeyPressed('ArrowUp')) y += 1;
+    if (RE.Input.keyboard.getKeyPressed('KeyS') || RE.Input.keyboard.getKeyPressed('ArrowDown')) y -= 1;
+    if (RE.Input.keyboard.getKeyPressed('KeyA') || RE.Input.keyboard.getKeyPressed('ArrowLeft')) x -= 1;
+    if (RE.Input.keyboard.getKeyPressed('KeyD') || RE.Input.keyboard.getKeyPressed('ArrowRight')) x += 1;
 
     // Gamepad input (overrides if significant)
-    const gx = RE.Input.gamepad.getAxis(0);
-    const gy = RE.Input.gamepad.getAxis(1);
+    const gp = RE.Input.gamepads[0];
+    const gx = gp ? gp.getAxis(0) : 0;
+    const gy = gp ? gp.getAxis(1) : 0;
     if (Math.abs(gx) > 0.1 || Math.abs(gy) > 0.1) {
       x = gx;
       y = -gy; // Invert Y for standard game coordinates
@@ -531,7 +534,7 @@ RE.registerComponent(${name});
       console.log("Space pressed!");
     }
 
-    if (RE.Input.keyboard.getKey("KeyW")) {
+    if (RE.Input.keyboard.getKeyPressed("KeyW")) {
       console.log("W is being held");
     }
 
@@ -549,11 +552,11 @@ RE.registerComponent(${name});
       console.log("Mouse position:", RE.Input.mouse.x, RE.Input.mouse.y);
     }
 
-    if (RE.Input.mouse.getButton(1)) {
+    if (RE.Input.mouse.getButtonPressed(1)) {
       console.log("Right mouse button held");
     }
 
-    const scrollDelta = RE.Input.mouse.wheel;
+    const scrollDelta = RE.Input.mouse.wheelY;
     if (scrollDelta !== 0) {
       console.log("Mouse wheel:", scrollDelta);
     }
@@ -562,8 +565,9 @@ RE.registerComponent(${name});
         case 'gamepad':
             inputCode = `
   update() {
-    // Check gamepad input
-    const gamepad = RE.Input.gamepad;
+    // Check gamepad input (first connected gamepad)
+    const gamepad = RE.Input.gamepads[0];
+    if (!gamepad) return; // No gamepad connected
 
     if (gamepad.getButtonDown(0)) {
       console.log("Gamepad button 0 pressed");

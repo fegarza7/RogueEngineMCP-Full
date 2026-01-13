@@ -163,15 +163,22 @@ export function generateEventManagerTemplate(options: EventManagerOptions): stri
 // Event listener type
 type EventCallback = (...args: any[]) => void;
 
-interface EventListener {
+interface EventSubscription {
   event: string;
   callback: EventCallback;
-  unsubscribe: () => void;
 }
 
+/**
+ * Custom EventBus implementation for game events.
+ * Rogue Engine provides lifecycle hooks (RE.onUpdate, etc.) but no generic event system.
+ * This EventManager provides pub/sub functionality for custom game events.
+ */
 export default class ${name} extends RE.Component {
-  // Store all event listeners for cleanup
-  private listeners: EventListener[] = [];
+  // Event storage: event name -> list of callbacks
+  private static events: Map<string, EventCallback[]> = new Map();
+
+  // Track subscriptions for this instance (for cleanup)
+  private subscriptions: EventSubscription[] = [];
 
   // Singleton reference
   private static instance: ${name} | null = null;
@@ -207,36 +214,61 @@ export default class ${name} extends RE.Component {
   }
 
   /**
-   * Subscribe to a Runtime event with automatic cleanup
+   * Subscribe to an event with automatic cleanup
    */
-  on(event: string, callback: EventCallback): EventListener {
-    const handler = RE.Runtime.onEvent(event, callback);
+  on(event: string, callback: EventCallback): EventSubscription {
+    // Add to global event map
+    if (!${name}.events.has(event)) {
+      ${name}.events.set(event, []);
+    }
+    ${name}.events.get(event)!.push(callback);
 
-    const listener: EventListener = {
-      event,
-      callback,
-      unsubscribe: () => handler.stop()
-    };
+    // Track subscription for cleanup
+    const subscription: EventSubscription = { event, callback };
+    this.subscriptions.push(subscription);
 
-    this.listeners.push(listener);
-    return listener;
+    return subscription;
   }
 
   /**
-   * Emit a Runtime event
+   * Emit an event to all subscribers
    */
   emit(event: string, ...args: any[]) {
-    RE.Runtime.emitEvent(event, ...args);
+    ${name}.emitEvent(event, ...args);
   }
 
   /**
-   * Unsubscribe a specific listener
+   * Static emit - can be called without instance
    */
-  off(listener: EventListener) {
-    const index = this.listeners.indexOf(listener);
-    if (index !== -1) {
-      listener.unsubscribe();
-      this.listeners.splice(index, 1);
+  static emitEvent(event: string, ...args: any[]) {
+    const callbacks = ${name}.events.get(event);
+    if (callbacks) {
+      for (const callback of callbacks) {
+        try {
+          callback(...args);
+        } catch (e) {
+          RE.Debug.logError(\`Error in event '\${event}': \${e}\`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Unsubscribe a specific subscription
+   */
+  off(subscription: EventSubscription) {
+    const callbacks = ${name}.events.get(subscription.event);
+    if (callbacks) {
+      const index = callbacks.indexOf(subscription.callback);
+      if (index !== -1) {
+        callbacks.splice(index, 1);
+      }
+    }
+
+    // Remove from tracked subscriptions
+    const subIndex = this.subscriptions.indexOf(subscription);
+    if (subIndex !== -1) {
+      this.subscriptions.splice(subIndex, 1);
     }
   }
 
@@ -244,17 +276,10 @@ export default class ${name} extends RE.Component {
    * Unsubscribe all listeners for a specific event
    */
   offAll(event: string) {
-    const toRemove = this.listeners.filter(l => l.event === event);
-    for (const listener of toRemove) {
-      this.off(listener);
+    const toRemove = this.subscriptions.filter(s => s.event === event);
+    for (const sub of toRemove) {
+      this.off(sub);
     }
-  }
-
-  /**
-   * Static emit helper
-   */
-  static emit(event: string, ...args: any[]) {
-    RE.Runtime.emitEvent(event, ...args);
   }
 
   // Example event handlers - customize for your game:
@@ -273,11 +298,17 @@ export default class ${name} extends RE.Component {
   */
 
   onBeforeRemoved() {
-    // Clean up ALL listeners
-    for (const listener of this.listeners) {
-      listener.unsubscribe();
+    // Clean up this instance's subscriptions
+    for (const sub of this.subscriptions) {
+      const callbacks = ${name}.events.get(sub.event);
+      if (callbacks) {
+        const index = callbacks.indexOf(sub.callback);
+        if (index !== -1) {
+          callbacks.splice(index, 1);
+        }
+      }
     }
-    this.listeners = [];
+    this.subscriptions = [];
 
     if (${name}.instance === this) {
       ${name}.instance = null;
@@ -341,7 +372,7 @@ export function generateGameManagerTemplate(options: GameManagerOptions): string
    * Restart current scene
    */
   restartScene() {
-    const currentScene = RE.App.currentScene.name;
+    const currentScene = RE.App.currentScene;
     RE.App.loadScene(currentScene);
   }` : `
   /**
@@ -357,9 +388,8 @@ export function generateGameManagerTemplate(options: GameManagerOptions): string
 type GameState = "menu" | "playing" | "paused" | "gameover";
 
 export default class ${name} extends RE.Component {
-  // Game state
+  // Game state (select from: menu, playing, paused, gameover)
   @RE.props.select()
-  @RE.props.options(["menu", "playing", "paused", "gameover"])
   gameState: GameState = "menu";
 
   // Score tracking
@@ -409,7 +439,8 @@ ${sceneManagementCode}
     if (this.gameState === "playing") {
       this.gameState = "paused";
       this.lastPauseTime = Date.now();
-      RE.Runtime.emitEvent("game:paused");
+      // Emit event via callback (implement your own EventBus for complex needs)
+      this.onPause?.();
       RE.Debug.log("Game paused");
     }
   }
@@ -417,10 +448,17 @@ ${sceneManagementCode}
   resume() {
     if (this.gameState === "paused") {
       this.gameState = "playing";
-      RE.Runtime.emitEvent("game:resumed");
+      // Emit event via callback
+      this.onResume?.();
       RE.Debug.log("Game resumed");
     }
   }
+
+  // Event callbacks - assign these from other components
+  onPause?: () => void;
+  onResume?: () => void;
+  onGameOver?: (data: { score: number; highScore: number }) => void;
+  onScoreChanged?: (data: { score: number; delta: number }) => void;
 
   togglePause() {
     if (this.gameState === "playing") {
@@ -441,14 +479,16 @@ ${sceneManagementCode}
       RE.Debug.log(\`New high score: \${this.highScore}\`);
     }
 
-    RE.Runtime.emitEvent("game:over", { score: this.score, highScore: this.highScore });
+    // Emit event via callback
+    this.onGameOver?.({ score: this.score, highScore: this.highScore });
     RE.Debug.log(\`Game Over! Score: \${this.score}\`);
   }
 
   // Score management
   addScore(points: number) {
     this.score += points;
-    RE.Runtime.emitEvent("score:changed", { score: this.score, delta: points });
+    // Emit event via callback
+    this.onScoreChanged?.({ score: this.score, delta: points });
   }
 
   getScore(): number {

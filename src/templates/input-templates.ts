@@ -138,16 +138,16 @@ ${includeJump ? `
     let horizontal = 0;
     let vertical = 0;
 
-    if (RE.Input.keyboard.getKey("KeyA") || RE.Input.keyboard.getKey("ArrowLeft")) {
+    if (RE.Input.keyboard.getKeyPressed("KeyA") || RE.Input.keyboard.getKeyPressed("ArrowLeft")) {
       horizontal = -1;
     }
-    if (RE.Input.keyboard.getKey("KeyD") || RE.Input.keyboard.getKey("ArrowRight")) {
+    if (RE.Input.keyboard.getKeyPressed("KeyD") || RE.Input.keyboard.getKeyPressed("ArrowRight")) {
       horizontal = 1;
     }
-    if (RE.Input.keyboard.getKey("KeyW") || RE.Input.keyboard.getKey("ArrowUp")) {
+    if (RE.Input.keyboard.getKeyPressed("KeyW") || RE.Input.keyboard.getKeyPressed("ArrowUp")) {
       vertical = 1;
     }
-    if (RE.Input.keyboard.getKey("KeyS") || RE.Input.keyboard.getKey("ArrowDown")) {
+    if (RE.Input.keyboard.getKeyPressed("KeyS") || RE.Input.keyboard.getKeyPressed("ArrowDown")) {
       vertical = -1;
     }
 ${includeJump ? `
