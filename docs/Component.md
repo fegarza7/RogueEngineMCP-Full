@@ -171,13 +171,36 @@ isEnabled: boolean = true;
 ```typescript
 @RE.props.select()
 ```
-Exposes a dropdown selection.
+Exposes a dropdown selection in the Inspector.
+
+**IMPORTANT:** The options array must be an **instance property** (NOT static), named exactly `{propertyName}Options`, and placed immediately after the decorated property.
 
 ```typescript
-@RE.props.select()
-mode: number = 0;
-static modeOptions = ["Easy", "Medium", "Hard"];
+// ✅ CORRECT - options as instance property
+@RE.props.select() mode = 0;
+modeOptions = ["Easy", "Medium", "Hard"];
+
+// ✅ Another example
+@RE.props.select() environment = 0;
+environmentOptions = ["OFFLINE", "DEV", "PRODUCTION"];
 ```
+
+**Common Mistakes:**
+```typescript
+// ❌ WRONG - static will NOT show dropdown options
+@RE.props.select() mode = 0;
+static modeOptions = ["Easy", "Medium", "Hard"];  // Won't work!
+
+// ❌ WRONG - wrong naming convention
+@RE.props.select() mode = 0;
+options = ["Easy", "Medium", "Hard"];  // Must be "modeOptions"
+```
+
+**Requirements:**
+1. Options array must be an **instance property** (no `static` keyword)
+2. Must be named exactly `{propertyName}Options` (e.g., `mode` → `modeOptions`)
+3. Must immediately follow the decorated property
+4. Array contains string values that appear in the dropdown
 
 ## Vector Properties
 

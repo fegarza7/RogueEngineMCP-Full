@@ -56,11 +56,27 @@ isEnabled: boolean = true;`,
   {
     name: 'select',
     syntax: '@RE.props.select()',
-    description: 'Exposes a dropdown selection. Requires static options array.',
+    description: 'Exposes a dropdown selection. IMPORTANT: Requires an instance property (NOT static) named {propertyName}Options immediately after the decorated property.',
     propertyType: 'number',
-    example: `@RE.props.select()
-mode: number = 0;
-static modeOptions = ["Easy", "Medium", "Hard"];`,
+    example: `// CORRECT pattern - options as instance property
+@RE.props.select() mode = 0;
+modeOptions = ["Easy", "Medium", "Hard"];
+
+// The options array MUST:
+// 1. Be an instance property (NOT static)
+// 2. Be named exactly {propertyName}Options
+// 3. Immediately follow the decorated property
+// 4. Contain string values for the dropdown
+
+// ❌ WRONG - static will NOT work
+// static modeOptions = ["Easy", "Medium", "Hard"];
+
+// Multiple selects example:
+@RE.props.select() environment = 0;
+environmentOptions = ["OFFLINE", "DEV", "PRODUCTION"];
+
+@RE.props.select() userRole = 0;
+userRoleOptions = ["DM", "Player"];`,
   },
   {
     name: 'vector2',
