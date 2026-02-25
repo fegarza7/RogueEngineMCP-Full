@@ -33,6 +33,8 @@ import {
     generateEventManagerTemplate,
     generateGameManagerTemplate,
 } from './templates/manager-templates.js';
+import { FF_CLASS_INFO, FF_CATEGORIES, formatFFClassInfo } from './focusframework-data.js';
+import { generateFocusControllerTemplate } from './templates/focusframework-templates.js';
 
 // ============================================================================
 // TOOL DEFINITIONS (18 Total)
@@ -402,6 +404,58 @@ const TOOLS: Tool[] = [
                     enum: ['direct', 'action-based'],
                     description: 'Input style: direct or action-based',
                     default: 'action-based',
+                },
+            },
+            required: ['name', 'directory'],
+        },
+    },
+
+    // -------------------------------------------------------------------------
+    // FOCUSFRAMEWORK TOOLS (4)
+    // -------------------------------------------------------------------------
+    {
+        name: 'get_focus_class_info',
+        description: 'Get detailed documentation for a FocusFramework class (FocusManager, FocusState, UILayerManager, BaseUI) including all methods, properties, and usage notes.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                className: {
+                    type: 'string',
+                    enum: ['FocusManager', 'FocusState', 'UILayerManager', 'BaseUI'],
+                    description: 'Name of the FocusFramework class to look up',
+                },
+            },
+            required: ['className'],
+        },
+    },
+    {
+        name: 'list_focus_classes',
+        description: 'List all FocusFramework classes with brief descriptions.',
+        inputSchema: { type: 'object', properties: {} },
+    },
+    {
+        name: 'search_focus_docs',
+        description: 'Search FocusFramework documentation by keyword.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                query: { type: 'string', description: 'Search term (e.g. "push", "UILayer", "transition")' },
+            },
+            required: ['query'],
+        },
+    },
+    {
+        name: 'generate_focus_controller',
+        description: 'Generate a starter AppController.re.ts that bootstraps FocusManager with named states.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'Component class name (e.g. AppController)' },
+                directory: { type: 'string', description: 'Directory path to create the file' },
+                states: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'State names to scaffold (default: ["loading","lobby","game"])',
                 },
             },
             required: ['name', 'directory'],
@@ -1127,6 +1181,60 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                             text: `Created player controller: ${fullPath}\n\n${content}`,
                         },
                     ],
+                };
+            }
+
+            // -----------------------------------------------------------------
+            // FOCUSFRAMEWORK TOOLS
+            // -----------------------------------------------------------------
+            case 'get_focus_class_info': {
+                const { className } = args as { className: string };
+                const content = formatFFClassInfo(className);
+                return { content: [{ type: 'text', text: content }] };
+            }
+
+            case 'list_focus_classes': {
+                const lines: string[] = ['# FocusFramework Classes\n'];
+                for (const cat of FF_CATEGORIES) {
+                    lines.push(`## ${cat.name}`, cat.description, '');
+                    for (const cls of cat.classes) {
+                        const info = FF_CLASS_INFO[cls];
+                        lines.push(`- **${cls}**: ${info?.description ?? ''}`);
+                    }
+                }
+                return { content: [{ type: 'text', text: lines.join('\n') }] };
+            }
+
+            case 'search_focus_docs': {
+                const { query } = args as { query: string };
+                const q = query.toLowerCase();
+                const results: string[] = [`# FocusFramework Search: "${query}"\n`];
+                for (const [cls, info] of Object.entries(FF_CLASS_INFO)) {
+                    const matches: string[] = [];
+                    if (info.description.toLowerCase().includes(q)) {
+                        matches.push(`  **Class description match**`);
+                    }
+                    for (const m of [...(info.methods ?? []), ...(info.properties ?? [])]) {
+                        if (m.signature.toLowerCase().includes(q) || m.description.toLowerCase().includes(q)) {
+                            matches.push(`  - \`${m.signature}\` — ${m.description}`);
+                        }
+                    }
+                    if (matches.length) {
+                        results.push(`## ${cls}`, ...matches, '');
+                    }
+                }
+                if (results.length === 1) results.push('No matches found.');
+                return { content: [{ type: 'text', text: results.join('\n') }] };
+            }
+
+            case 'generate_focus_controller': {
+                const { name: controllerName, directory, states } = args as { name: string; directory: string; states?: string[] };
+                const code = generateFocusControllerTemplate(controllerName, states);
+                const filePath = path.join(directory, `${controllerName}.re.ts`);
+                await fs.mkdir(directory, { recursive: true });
+                await fs.writeFile(filePath, code, 'utf-8');
+                return {
+                    content: [{ type: 'text', text: `Generated ${filePath}\n\n\`\`\`typescript\n${code}\n\`\`\`` }],
                 };
             }
 
