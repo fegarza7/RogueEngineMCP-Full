@@ -4,13 +4,14 @@ A comprehensive Model Context Protocol (MCP) server for RogueEngine game develop
 
 ## Features
 
-**18 tools** organized into three categories:
+**22 tools** organized into four categories:
 
 | Category | Count | Purpose |
 |----------|-------|---------|
 | Core Tools | 5 | Component creation, project analysis |
-| Documentation | 5 | API lookup, decorator reference, search |
+| Documentation | 5 | RE API lookup, decorator reference, search |
 | Scaffolding | 8 | Common gameplay patterns |
+| FocusFramework | 4 | State machine plugin — docs + scaffolding |
 
 ---
 
@@ -172,6 +173,40 @@ Create a player movement controller with optional jump and configurable input st
 
 ---
 
+## FocusFramework Tools
+
+FocusFramework is a state machine plugin for RogueEngine that manages UI layers, 3D prefab lifecycles, and state transitions through a fluent builder API. **Source:** [github.com/danbaoren/FocusFramework](https://github.com/danbaoren/FocusFramework)
+
+### `get_focus_class_info`
+Get detailed documentation for a FocusFramework class including all methods, properties, and usage notes.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `className` | enum | Yes | One of: `FocusManager`, `FocusState`, `UILayerManager`, `BaseUI` |
+
+### `list_focus_classes`
+List all FocusFramework classes with brief descriptions.
+
+*No parameters required.*
+
+### `search_focus_docs`
+Search FocusFramework documentation by keyword.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search term (e.g. "push", "UILayer", "transition") |
+
+### `generate_focus_controller`
+Generate a starter `AppController.re.ts` that bootstraps FocusManager with named states.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Component class name (e.g. AppController) |
+| `directory` | string | Yes | Directory path to create the file |
+| `states` | string[] | No | State names to scaffold (default: ["loading","lobby","game"]) |
+
+---
+
 ## Installation
 
 ### Prerequisites
@@ -250,13 +285,15 @@ Add to `.vscode/settings.json`:
 ```
 RogueEngineMCP-Full/
 ├── src/
-│   ├── index.ts                    # Main MCP server
-│   ├── docs-data.ts                # Embedded RE documentation
+│   ├── index.ts                          # Main MCP server
+│   ├── docs-data.ts                      # Embedded RE documentation
+│   ├── focusframework-data.ts            # FocusFramework documentation
 │   └── templates/
-│       ├── input-templates.ts      # Player controller generator
-│       ├── gameplay-templates.ts   # Picking, spawner, pool, tag filter
-│       └── manager-templates.ts    # Audio, event, game managers
-├── docs/                           # RE documentation markdown
+│       ├── input-templates.ts            # Player controller generator
+│       ├── gameplay-templates.ts         # Picking, spawner, pool, tag filter
+│       ├── manager-templates.ts          # Audio, event, game managers
+│       └── focusframework-templates.ts   # AppController scaffold generator
+├── docs/                                 # RE documentation markdown
 │   ├── App.md
 │   ├── Component.md
 │   ├── Input.md
@@ -288,6 +325,11 @@ Once configured, you can ask Claude to:
 - "Generate an object pool for bullets with initial size 20"
 - "Create a game manager with scene management"
 
+**FocusFramework:**
+- "What methods does FocusManager have?"
+- "How does FocusState.push() work?"
+- "Generate an AppController with states: connecting, lobby, game, pause"
+
 ---
 
 ## Development
@@ -308,6 +350,7 @@ npm run build
 
 - [RogueEngine Documentation](https://docs.rogueengine.io)
 - [RogueEngine Website](https://rogueengine.io)
+- [FocusFramework Plugin](https://github.com/danbaoren/FocusFramework)
 - [MCP Protocol](https://modelcontextprotocol.io)
 
 ---
