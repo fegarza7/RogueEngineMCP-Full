@@ -199,6 +199,12 @@ function recordNested(t: ts.Type) {
   if (!/^[A-Z][\w]*$/.test(name)) return;
   const d = declOf(target);
   if (!d || !isUnderRogue(d) || !ts.isClassDeclaration(d)) return;
+  // The decorator machinery (Decorators/Props/ListProp/MapProp) is reachable
+  // through props.list / props.map, but it is namespace plumbing, not API
+  // surface -- every one of its methods is already emitted as a decorator
+  // entry (including the list.* / map.* forms). Documenting the classes too
+  // would just add noise nobody can call directly.
+  if (fileTag(d) === "Decorators") return;
   if (!nestedCandidates.has(name)) nestedCandidates.set(name, t);
 }
 
