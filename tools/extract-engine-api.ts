@@ -179,6 +179,24 @@ function bestDoc(sym: ts.Symbol): string {
   return '';
 }
 
+/**
+ * Types reached through a property that are themselves classes declared under
+ * _Rogue/ — e.g. RE.Input.keyboard is a `Keyboard`. Those classes are not
+ * barrel-exported but carry the API people actually call, so collect them for a
+ * second pass. Discovered by following types, never by a hardcoded name list.
+ */
+const nestedCandidates = new Map<string, ts.Type>();
+function recordNested(t: ts.Type) {
+  const target = (t.getSymbol()?.flags ?? 0) & ts.SymbolFlags.Alias
+    ? checker.getAliasedSymbol(t.getSymbol()!) : t.getSymbol();
+  if (!target) return;
+  const name = target.getName();
+  if (!/^[A-Z][\w]*$/.test(name)) return;
+  const d = declOf(target);
+  if (!d || !isUnderRogue(d) || !ts.isClassDeclaration(d)) return;
+  if (!nestedCandidates.has(name)) nestedCandidates.set(name, t);
+}
+
 function extractMembers(type: ts.Type, isStatic: boolean, ownFile?: string) {
   const properties: PropertyInfo[] = [];
   const methods: MethodInfo[] = [];
@@ -218,6 +236,7 @@ function extractMembers(type: ts.Type, isStatic: boolean, ownFile?: string) {
       const hasSet = decls.some(ts.isSetAccessorDeclaration);
       const readonly = (hasGet && !hasSet) ||
         !!(ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Readonly);
+      recordNested(t);
       const p: PropertyInfo = { name, type: printType(t, decl), description };
       if (readonly) p.readonly = true;
       if (isStatic) p.static = true;
@@ -269,8 +288,14 @@ for (const rawSym of moduleExports) {
   const decl = declOf(sym);
   if (!decl || !isUnderRogue(decl)) continue;
 
-  // free functions -> grouped into a pseudo-class named after their file
-  if (ts.isFunctionDeclaration(decl)) {
+  // Free functions -> grouped into a pseudo-class named after their file.
+  // Detect by TYPE, not declaration kind: much of ComponentsManager is exported
+  // as `export declare const getComponents: <T>(...) => T[]`, which is not a
+  // FunctionDeclaration but is absolutely a function to the caller.
+  const symType = checker.getTypeOfSymbolAtLocation(sym, decl);
+  const isCallable = symType.getCallSignatures().length > 0 &&
+    symType.getConstructSignatures().length === 0;
+  if (ts.isFunctionDeclaration(decl) || isCallable) {
     const g = fileTag(decl);
     functionGroups[g] ??= {
       name: g, description: `${g} exported directly on RE.`,
@@ -328,6 +353,23 @@ for (const rawSym of moduleExports) {
     }
   }
 
+}
+
+// ---------------------------------------------------------------------------
+// Second pass: document the nested classes collected above (Keyboard, Mouse,
+// TouchController, GamepadController). They are part of the surface an author
+// touches even though the barrel does not export them directly.
+// ---------------------------------------------------------------------------
+for (const [name, t] of nestedCandidates) {
+  if (classes[name] || components[name] || functionGroups[name]) continue;
+  const sym = t.getSymbol()!;
+  const d = declOf(sym)!;
+  const mem = extractMembers(t, false, fileTag(d));
+  if (!mem.properties.length && !mem.methods.length) continue;
+  classes[name] = {
+    name, description: bestDoc(sym), kind: 'class',
+    properties: mem.properties, methods: mem.methods,
+  };
 }
 
 // ---------------------------------------------------------------------------

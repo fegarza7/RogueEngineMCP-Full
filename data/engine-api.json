@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-14T19:00:03.357Z",
+  "generatedAt": "2026-09-14T19:07:54.818Z",
   "engineProjectVersion": 32,
   "sourceProject": "battlecrafter-gameClient",
   "counts": {
-    "classes": 20,
+    "classes": 25,
     "components": 36,
     "functionGroups": 4,
     "decorators": 53,
@@ -2177,6 +2177,450 @@
         }
       ],
       "baseClass": "Component"
+    },
+    "Mouse": {
+      "name": "Mouse",
+      "description": "",
+      "kind": "class",
+      "properties": [
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "description": ""
+        },
+        {
+          "name": "isLeftButtonDown",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isLeftButtonPressed",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isLeftButtonUp",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isMidButtonDown",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isMidButtonPressed",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isMidButtonUp",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isMoving",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isRightButtonDown",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isRightButtonPressed",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "isRightButtonUp",
+          "type": "boolean",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "movementX",
+          "type": "number",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "movementY",
+          "type": "number",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "pointerLock",
+          "type": "PointerLockControls",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "viewX",
+          "type": "number",
+          "description": ""
+        },
+        {
+          "name": "viewY",
+          "type": "number",
+          "description": ""
+        },
+        {
+          "name": "wheelX",
+          "type": "number",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "wheelY",
+          "type": "number",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "x",
+          "type": "number",
+          "description": "",
+          "readonly": true
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "description": "",
+          "readonly": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "getButtonDown",
+          "signature": "getButtonDown(button: number): boolean",
+          "description": ""
+        },
+        {
+          "name": "getButtonPressed",
+          "signature": "getButtonPressed(button: number): boolean",
+          "description": ""
+        },
+        {
+          "name": "getButtonUp",
+          "signature": "getButtonUp(button: number): boolean",
+          "description": ""
+        },
+        {
+          "name": "init",
+          "signature": "init(): void",
+          "description": ""
+        },
+        {
+          "name": "lock",
+          "signature": "lock(): void",
+          "description": ""
+        },
+        {
+          "name": "unlock",
+          "signature": "unlock(): void",
+          "description": ""
+        }
+      ]
+    },
+    "Keyboard": {
+      "name": "Keyboard",
+      "description": "",
+      "kind": "class",
+      "properties": [],
+      "methods": [
+        {
+          "name": "getKeyDown",
+          "signature": "getKeyDown(keyCode: string): boolean",
+          "description": ""
+        },
+        {
+          "name": "getKeyPressed",
+          "signature": "getKeyPressed(keyCode: string): boolean",
+          "description": ""
+        },
+        {
+          "name": "getKeyUp",
+          "signature": "getKeyUp(keyCode: string): boolean",
+          "description": ""
+        },
+        {
+          "name": "init",
+          "signature": "init(): void",
+          "description": ""
+        }
+      ]
+    },
+    "TouchController": {
+      "name": "TouchController",
+      "description": "",
+      "kind": "class",
+      "properties": [
+        {
+          "name": "buttons",
+          "type": "TouchButton[]",
+          "description": ""
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "description": ""
+        },
+        {
+          "name": "endTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "leftEndTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "leftStartTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "leftTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "rightEndTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "rightStartTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "rightTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "startTouches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        },
+        {
+          "name": "touches",
+          "type": "TouchInteraction[]",
+          "description": ""
+        }
+      ],
+      "methods": [
+        {
+          "name": "createButton",
+          "signature": "createButton(elem: HTMLDivElement, stopPropagation?: boolean): TouchButton",
+          "description": ""
+        },
+        {
+          "name": "init",
+          "signature": "init(): void",
+          "description": ""
+        }
+      ]
+    },
+    "ListProp": {
+      "name": "ListProp",
+      "description": "",
+      "kind": "class",
+      "properties": [],
+      "methods": [
+        {
+          "name": "animation",
+          "signature": "animation(): typeof decoratorFunc",
+          "description": "Declares a prop that references an animation clip."
+        },
+        {
+          "name": "audio",
+          "signature": "audio(isPositional?: boolean): typeof decoratorFunc",
+          "description": "Declares an audio prop, optionally positional."
+        },
+        {
+          "name": "button",
+          "signature": "button(): typeof decoratorFunc",
+          "description": "Declares a button prop that triggers the decorated method from the inspector."
+        },
+        {
+          "name": "checkbox",
+          "signature": "checkbox(): typeof decoratorFunc",
+          "description": "Declares a boolean prop shown as a checkbox."
+        },
+        {
+          "name": "code",
+          "signature": "code(lang: \"json\" | \"html\" | \"glsl\"): typeof decoratorFunc",
+          "description": "Declares a code prop with syntax highlighting for the given language."
+        },
+        {
+          "name": "color",
+          "signature": "color(asString?: boolean): typeof decoratorFunc",
+          "description": "Declares a color prop. Pass `true` to store the value as a hex string."
+        },
+        {
+          "name": "component",
+          "signature": "component<T extends Component>(componentClass: (new (...args: any[]) => T) | string, name?: string): typeof decoratorFunc",
+          "description": "Declares a prop that references another component (by class or name)."
+        },
+        {
+          "name": "material",
+          "signature": "material(): typeof decoratorFunc",
+          "description": "Declares a prop that references a material asset."
+        },
+        {
+          "name": "model",
+          "signature": "model(spawnable?: boolean): typeof decoratorFunc",
+          "description": "Declares a prop that references a 3D model file (glb/gltf/fbx/drc). Pass true to get a `Model` spawn handle."
+        },
+        {
+          "name": "num",
+          "signature": "num(min?: number, max?: number, step?: number): typeof decoratorFunc",
+          "description": "Declares a number prop, optionally constrained by min/max and a step."
+        },
+        {
+          "name": "object3d",
+          "signature": "object3d(): typeof decoratorFunc",
+          "description": "Declares a prop that references another Object3D in the scene."
+        },
+        {
+          "name": "prefab",
+          "signature": "prefab(): typeof decoratorFunc",
+          "description": "Declares a prop that references a prefab asset."
+        },
+        {
+          "name": "select",
+          "signature": "select(): typeof decoratorFunc",
+          "description": "Declares a select prop whose options are provided by a `selectedOptions` getter."
+        },
+        {
+          "name": "text",
+          "signature": "text(isTextArea?: boolean): typeof decoratorFunc",
+          "description": "Declares a string prop, optionally rendered as a text area."
+        },
+        {
+          "name": "texture",
+          "signature": "texture(): typeof decoratorFunc",
+          "description": "Declares a prop that references a texture asset."
+        },
+        {
+          "name": "vector2",
+          "signature": "vector2(): typeof decoratorFunc",
+          "description": "Declares a two-dimensional vector prop."
+        },
+        {
+          "name": "vector3",
+          "signature": "vector3(): typeof decoratorFunc",
+          "description": "Declares a three-dimensional vector prop."
+        }
+      ]
+    },
+    "MapProp": {
+      "name": "MapProp",
+      "description": "",
+      "kind": "class",
+      "properties": [],
+      "methods": [
+        {
+          "name": "animation",
+          "signature": "animation(): typeof decoratorFunc",
+          "description": "Declares a prop that references an animation clip."
+        },
+        {
+          "name": "audio",
+          "signature": "audio(isPositional?: boolean): typeof decoratorFunc",
+          "description": "Declares an audio prop, optionally positional."
+        },
+        {
+          "name": "button",
+          "signature": "button(): typeof decoratorFunc",
+          "description": "Declares a button prop that triggers the decorated method from the inspector."
+        },
+        {
+          "name": "checkbox",
+          "signature": "checkbox(): typeof decoratorFunc",
+          "description": "Declares a boolean prop shown as a checkbox."
+        },
+        {
+          "name": "code",
+          "signature": "code(lang: \"json\" | \"html\" | \"glsl\"): typeof decoratorFunc",
+          "description": "Declares a code prop with syntax highlighting for the given language."
+        },
+        {
+          "name": "color",
+          "signature": "color(asString?: boolean): typeof decoratorFunc",
+          "description": "Declares a color prop. Pass `true` to store the value as a hex string."
+        },
+        {
+          "name": "component",
+          "signature": "component<T extends Component>(componentClass: (new (...args: any[]) => T) | string, name?: string): typeof decoratorFunc",
+          "description": "Declares a prop that references another component (by class or name)."
+        },
+        {
+          "name": "material",
+          "signature": "material(): typeof decoratorFunc",
+          "description": "Declares a prop that references a material asset."
+        },
+        {
+          "name": "model",
+          "signature": "model(spawnable?: boolean): typeof decoratorFunc",
+          "description": "Declares a prop that references a 3D model file (glb/gltf/fbx/drc). Pass true to get a `Model` spawn handle."
+        },
+        {
+          "name": "num",
+          "signature": "num(min?: number, max?: number, step?: number): typeof decoratorFunc",
+          "description": "Declares a number prop, optionally constrained by min/max and a step."
+        },
+        {
+          "name": "object3d",
+          "signature": "object3d(): typeof decoratorFunc",
+          "description": "Declares a prop that references another Object3D in the scene."
+        },
+        {
+          "name": "prefab",
+          "signature": "prefab(): typeof decoratorFunc",
+          "description": "Declares a prop that references a prefab asset."
+        },
+        {
+          "name": "select",
+          "signature": "select(): typeof decoratorFunc",
+          "description": "Declares a select prop whose options are provided by a `selectedOptions` getter."
+        },
+        {
+          "name": "text",
+          "signature": "text(isTextArea?: boolean): typeof decoratorFunc",
+          "description": "Declares a string prop, optionally rendered as a text area."
+        },
+        {
+          "name": "texture",
+          "signature": "texture(): typeof decoratorFunc",
+          "description": "Declares a prop that references a texture asset."
+        },
+        {
+          "name": "vector2",
+          "signature": "vector2(): typeof decoratorFunc",
+          "description": "Declares a two-dimensional vector prop."
+        },
+        {
+          "name": "vector3",
+          "signature": "vector3(): typeof decoratorFunc",
+          "description": "Declares a three-dimensional vector prop."
+        }
+      ]
     }
   },
   "components": {
@@ -12356,14 +12800,64 @@
           "description": "Registers a component class so it can be attached to objects and serialized. Decorate your component class with `@registerComponent` to register it."
         },
         {
+          "name": "serializeComponents",
+          "signature": "serializeComponents(): {}",
+          "description": "Serializes all runtime components and returns the resulting map."
+        },
+        {
+          "name": "initComponents",
+          "signature": "initComponents(scene: Scene, componentsToLoad?: Object): void",
+          "description": "Builds runtime component instances from serialized component data for the given scene."
+        },
+        {
+          "name": "initEditorComponents",
+          "signature": "initEditorComponents(): void",
+          "description": "Rebuilds editor component instances from serialized editor component data."
+        },
+        {
           "name": "clearComponents",
           "signature": "clearComponents(): void",
           "description": "Clears registered component prototypes, restoring the built-in ones."
         },
         {
+          "name": "loadComponents",
+          "signature": "loadComponents(object: Object3D, objectComponents: Component[]): void",
+          "description": "Instantiates serialized components onto an object and fires the component-loaded event for each."
+        },
+        {
+          "name": "addComponent",
+          "signature": "addComponent(component: Component): void",
+          "description": "Adds a component to its object's component list. If the runtime is running, the component's {@link Component.awake} is called immediately."
+        },
+        {
+          "name": "removeComponent",
+          "signature": "removeComponent(component: Component): boolean | undefined",
+          "description": "Removes a component from its object and fires the component-removed event."
+        },
+        {
+          "name": "removeComponents",
+          "signature": "removeComponents(object3d: Object3D, recursive?: boolean): void",
+          "description": "Removes all components on an object, optionally including those on its descendants."
+        },
+        {
+          "name": "getComponent",
+          "signature": "getComponent<T extends Component>(ComponentClass: new (...args: any[]) => T, object3d?: Object3D, inAncestor?: boolean): T",
+          "description": "Finds a component of the given class. Optionally scopes the search to an object (and its ancestors when `inAncestor` is true)."
+        },
+        {
+          "name": "getComponents",
+          "signature": "getComponents<T extends Component>(ComponentClass: new (...args: any[]) => T): T[]",
+          "description": "Finds all components of the given class across the scene."
+        },
+        {
           "name": "getComponentByName",
           "signature": "getComponentByName(name: string, object3d?: Object3D, inAncestor?: boolean): any",
           "description": "Finds a component by name. Optionally scopes the search to an object (and its ancestors when `inAncestor` is true)."
+        },
+        {
+          "name": "getObjectComponents",
+          "signature": "getObjectComponents(object3d: Object3D): Component[]",
+          "description": "Returns the components attached to an object."
         },
         {
           "name": "getComponentPrototypes",
