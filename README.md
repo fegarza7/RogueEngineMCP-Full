@@ -4,14 +4,36 @@ A comprehensive Model Context Protocol (MCP) server for RogueEngine game develop
 
 ## Features
 
-**22 tools** organized into four categories:
+**25 tools** organized into five categories:
 
 | Category | Count | Purpose |
 |----------|-------|---------|
 | Core Tools | 5 | Component creation, project analysis |
 | Documentation | 5 | RE API lookup, decorator reference, search |
+| Built-ins & Knowledge | 3 | Built-in components, engine gotchas |
 | Scaffolding | 8 | Common gameplay patterns |
 | FocusFramework | 4 | State machine plugin — docs + scaffolding |
+
+### Where the API data comes from
+
+The RogueEngine API reference is **generated from the `.d.ts` files the engine
+ships**, rather than hand-transcribed from the docs site. That is what keeps it
+from going stale: when a new engine version lands, re-run the extractor against
+any project and the diff *is* the API changelog.
+
+```bash
+# regenerate the API data from a RogueEngine project
+npm run extract -- --project /path/to/your/RogueEngine/project
+
+# typecheck + curated-example staleness + server smoke test
+npm run verify
+```
+
+Hand-written examples and gotchas live in `src/curated/` and are merged on top of
+the generated data. The extractor never reads that directory, so regeneration
+cannot destroy curation — and `npm run verify` cross-checks every `RE.*`
+reference in those examples against the generated API, so an example that drifts
+out of date fails loudly instead of silently teaching a removed API.
 
 ---
 
@@ -59,7 +81,7 @@ Add a new property decorator to an existing RogueEngine component.
 | `filePath` | string | Yes | Path to the component file |
 | `propertyName` | string | Yes | Name of the property to add |
 | `propertyType` | string | Yes | TypeScript type (e.g., number, THREE.Vector3) |
-| `decorator` | enum | No | One of: `num`, `text`, `checkbox`, `select`, `vector2`, `vector3`, `color`, `object3d`, `component`, `prefab`, `audio`, `material`, `texture` (default: num) |
+| `decorator` | enum | No | Any engine prop decorator. **Derived from the generated API**, so it always matches the installed engine — run `get_re_decorators` for the current list (53 including the `list.*` / `map.*` forms). Default: `num` |
 | `defaultValue` | string | No | Default value for the property |
 
 ---
@@ -71,7 +93,7 @@ Get detailed information about a Rogue Engine class including properties, method
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `className` | enum | Yes | One of: `App`, `Component`, `VisualComponent`, `Input`, `Mouse`, `Keyboard`, `TouchController`, `GamepadController`, `Prefab`, `Runtime`, `SceneController`, `Debug`, `Tags`, `AudioAsset`, `Functions`, `Events` |
+| `className` | enum | Yes | Any engine class, singleton or built-in component. **Derived from the generated API** — run `list_re_categories` for the current list |
 
 ### `get_re_decorators`
 List all Rogue Engine property decorators (`@RE.props.*`) with syntax and examples.
@@ -94,6 +116,35 @@ Search Rogue Engine documentation for a keyword or phrase.
 List all available Rogue Engine documentation categories and their classes.
 
 *No parameters required.*
+
+---
+
+## Built-ins & Knowledge
+
+### `list_builtin_components`
+List the engine's built-in components with a one-line summary each — `Character`,
+`Weapon`, the `UI*` set, the `Audio*` set, `OrbitCamera`, and the rest.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `group` | enum | No | Restrict to one group: `UI`, `Audio`, `Weapon`, `Camera`, `FX`, `CSS2D`, `HTMLMesh`, `Core` |
+| `search` | string | No | Filter by name or description |
+
+### `get_builtin_component`
+Full API for one built-in component: properties, methods, statics, and what it
+extends. Accepts a free-text name and suggests near matches if it misses.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Component name, e.g. `Character`, `UIButton`, `AudioPlayer3D` |
+
+### `get_re_gotchas`
+Engine foot-guns: APIs that compile but are wrong, removed APIs and their
+replacements, and performance traps. Worth checking before writing engine code.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `topic` | enum | No | `assets`, `performance`, `raycasting`, `models`, `audio`, `lifecycle`, `api` |
 
 ---
 
@@ -284,25 +335,37 @@ Add to `.vscode/settings.json`:
 
 ```
 RogueEngineMCP-Full/
+├── tools/
+│   └── extract-engine-api.ts             # Reads the engine's .d.ts -> JSON
+├── data/
+│   └── engine-api.json                   # GENERATED — do not hand-edit
+├── scripts/
+│   └── verify.mjs                        # Staleness check + server smoke test
 ├── src/
 │   ├── index.ts                          # Main MCP server
-│   ├── docs-data.ts                      # Embedded RE documentation
+│   ├── engine-api.ts                     # Loads generated JSON, merges curated
+│   ├── docs-data.ts                      # Public data surface + formatters
 │   ├── focusframework-data.ts            # FocusFramework documentation
+│   ├── curated/                          # Hand-written — never generated over
+│   │   ├── examples.ts                   # Teaching examples + overrides
+│   │   ├── gotchas.ts                    # Engine foot-guns
+│   │   └── lifecycle.ts                  # Component lifecycle
 │   └── templates/
 │       ├── input-templates.ts            # Player controller generator
 │       ├── gameplay-templates.ts         # Picking, spawner, pool, tag filter
 │       ├── manager-templates.ts          # Audio, event, game managers
 │       └── focusframework-templates.ts   # AppController scaffold generator
-├── docs/                                 # RE documentation markdown
-│   ├── App.md
-│   ├── Component.md
-│   ├── Input.md
-│   └── ...
-├── dist/                           # Compiled JavaScript (generated)
+├── dist/                                 # Compiled JavaScript (committed)
 ├── package.json
 ├── tsconfig.json
+├── tsconfig.tools.json
 └── README.md
 ```
+
+> The old `docs/*.md` and `HTML-DOCS.txt` were removed once the API data became
+> generated. They were a January 2026 scrape, read by nothing at runtime, and had
+> drifted far enough to document APIs the engine no longer has. Git history still
+> has them if you need to look something up.
 
 ---
 
