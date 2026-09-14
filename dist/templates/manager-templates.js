@@ -4,134 +4,110 @@
  */
 export function generateAudioManagerTemplate(options) {
     const { name, trackCount } = options;
-    // Generate audio properties based on track count
-    const audioProps = [];
-    const playMethods = [];
+    // One AudioPlayer slot per requested track. AudioPlayer is a built-in
+    // component, so the heavy lifting (playlists, fades, bus routing) is the
+    // engine's job -- this manager just orchestrates.
+    const playerProps = [];
     for (let i = 0; i < trackCount; i++) {
-        if (i === 0) {
-            audioProps.push(`  @RE.props.audio()
-  music: RE.AudioAsset;`);
-            playMethods.push(`  playMusic() {
-    if (this.musicEnabled && this.music) {
-      this.music.play();
-    }
-  }
-
-  stopMusic() {
-    if (this.music) {
-      this.music.stop();
-    }
-  }`);
-        }
-        else {
-            audioProps.push(`  @RE.props.audio()
-  sfx${i}: RE.AudioAsset;`);
-            playMethods.push(`  playSfx${i}() {
-    if (this.sfxEnabled && this.sfx${i}) {
-      this.sfx${i}.play();
-    }
-  }`);
-        }
+        playerProps.push(`  /** Assign an object carrying an AudioPlayer3D (or AudioPlayer) component. */`, `  @RE.props.component(RE.AudioPlayer3D) sfx${i}: RE.AudioPlayer3D;`);
     }
     return `import * as RE from 'rogue-engine';
 
+/**
+ * ${name} -- thin orchestrator over the engine's built-in audio stack.
+ *
+ * Volume is applied through RE.AudioMixer buses, NOT by storing numbers on this
+ * component. AudioMixer is static and global: setVolume(bus, v) affects every
+ * player routed to that bus.
+ *
+ * Setup:
+ *  1. Add an AudioPlayer component for music and AudioPlayer3D components for
+ *     positional SFX (Add Object / Add Component in the editor).
+ *  2. Set each player's Bus in the inspector (Music, SFX, UI, ...).
+ *  3. Drag those objects onto the props below.
+ */
+@RE.registerComponent
 export default class ${name} extends RE.Component {
-  // Volume controls
-  @RE.props.num(1)
-  masterVolume: number = 1;
-
-  @RE.props.num(0.7)
-  musicVolume: number = 0.7;
-
-  @RE.props.num(1)
-  sfxVolume: number = 1;
-
-  // Enable toggles
-  @RE.props.checkbox(true)
-  musicEnabled: boolean = true;
-
-  @RE.props.checkbox(true)
-  sfxEnabled: boolean = true;
-
-  // Audio assets
-${audioProps.join('\n\n')}
-
-  // Singleton reference
   private static instance: ${name} | null = null;
 
+  /** Object carrying the AudioPlayer used for music/playlists. */
+  @RE.props.component(RE.AudioPlayer) music: RE.AudioPlayer;
+
+${playerProps.join('\n')}
+
+  @RE.props.num(0, 1) masterVolume = 1;
+  @RE.props.num(0, 1) musicVolume = 1;
+  @RE.props.num(0, 1) sfxVolume = 1;
+
   awake() {
-    // Singleton pattern
-    if (${name}.instance && ${name}.instance !== this) {
-      RE.Debug.logWarning("Multiple ${name} instances - using first one");
-      return;
-    }
     ${name}.instance = this;
   }
 
   start() {
-    // Auto-play music if enabled
-    if (this.musicEnabled && this.music) {
-      this.playMusic();
-    }
+    // Push the inspector values into the mixer once everything exists.
+    this.applyVolumes();
   }
 
-  // Static accessor
   static get(): ${name} | null {
     return ${name}.instance;
   }
 
-  // Volume controls
-  setMasterVolume(volume: number) {
-    this.masterVolume = Math.max(0, Math.min(1, volume));
+  /** Re-applies all three volumes to the mixer. */
+  applyVolumes() {
+    RE.AudioMixer.setMasterVolume(this.masterVolume);
+    RE.AudioMixer.setVolume(RE.AudioMixer.bus.Music, this.musicVolume);
+    RE.AudioMixer.setVolume(RE.AudioMixer.bus.SFX, this.sfxVolume);
   }
 
-  setMusicVolume(volume: number) {
-    this.musicVolume = Math.max(0, Math.min(1, volume));
+  setMasterVolume(v: number) {
+    this.masterVolume = Math.max(0, Math.min(1, v));
+    RE.AudioMixer.setMasterVolume(this.masterVolume);
   }
 
-  setSfxVolume(volume: number) {
-    this.sfxVolume = Math.max(0, Math.min(1, volume));
+  setMusicVolume(v: number) {
+    this.musicVolume = Math.max(0, Math.min(1, v));
+    RE.AudioMixer.setVolume(RE.AudioMixer.bus.Music, this.musicVolume);
   }
 
-  // Toggle methods
-  toggleMusic() {
-    this.musicEnabled = !this.musicEnabled;
-    if (this.musicEnabled) {
-      this.playMusic();
-    } else {
-      this.stopMusic();
-    }
+  setSfxVolume(v: number) {
+    this.sfxVolume = Math.max(0, Math.min(1, v));
+    RE.AudioMixer.setVolume(RE.AudioMixer.bus.SFX, this.sfxVolume);
   }
 
-  toggleSfx() {
-    this.sfxEnabled = !this.sfxEnabled;
+  playMusic(trackIndex?: number, fadeIn = 1) {
+    this.music?.play(trackIndex, fadeIn);
   }
 
-  // Audio playback methods
-${playMethods.join('\n\n')}
-
-  // Generic play method for any assigned audio
-  playSound(audio: RE.AudioAsset | undefined) {
-    if (this.sfxEnabled && audio) {
-      audio.play();
-    }
+  stopMusic(fadeOut = 1) {
+    this.music?.fadeOutNow(fadeOut);
   }
 
-  // Stop all audio
+  nextTrack() { this.music?.next(); }
+  toggleMusic() { this.music?.togglePlay(); }
+
+  /** Play any AudioPlayer you hold a reference to. */
+  playSound(player?: RE.AudioPlayer | RE.AudioPlayer3D) {
+    player?.play();
+  }
+
+  /**
+   * One-shot from a raw AudioAsset prop.
+   * NOTE: AudioAsset itself has no play() -- you must get the THREE.Audio.
+   * Prefer an AudioPlayer component for anything reused.
+   */
+  playOneShot(asset?: RE.AudioAsset) {
+    const audio = asset?.getAudio();
+    if (audio && !audio.isPlaying) audio.play();
+  }
+
   stopAll() {
-    this.stopMusic();
-    // Note: SFX typically play to completion
+    this.stopMusic(0);
   }
 
   onBeforeRemoved() {
-    this.stopAll();
-    if (${name}.instance === this) {
-      ${name}.instance = null;
-    }
+    if (${name}.instance === this) ${name}.instance = null;
   }
 }
-
-RE.registerComponent(${name});
 `;
 }
 export function generateEventManagerTemplate(options) {
@@ -359,10 +335,10 @@ export default class ${name} extends RE.Component {
   gameState: GameState = "menu";
 
   // Score tracking
-  @RE.props.num(0)
+  @RE.props.num()
   score: number = 0;
 
-  @RE.props.num(0)
+  @RE.props.num()
   highScore: number = 0;
 
   // Time tracking

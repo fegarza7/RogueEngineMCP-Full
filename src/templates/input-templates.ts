@@ -18,17 +18,17 @@ import * as THREE from 'three';
 
 export default class ${name} extends RE.Component {
   // Movement settings
-  @RE.props.num(5)
+  @RE.props.num()
   moveSpeed: number = 5;
 
-  @RE.props.num(10)
+  @RE.props.num()
   rotationSpeed: number = 10;
 ${includeJump ? `
   // Jump settings
-  @RE.props.num(8)
+  @RE.props.num()
   jumpForce: number = 8;
 
-  @RE.props.num(20)
+  @RE.props.num()
   gravity: number = 20;
 
   private velocityY: number = 0;
@@ -51,9 +51,10 @@ ${includeJump ? '    // - "Jump": Space key or gamepad A button' : ''}
   update() {
     const deltaTime = RE.Runtime.deltaTime;
 
-    // Get movement input from action-based system
-    const horizontal = RE.Input.getAxis("Horizontal");
-    const vertical = RE.Input.getAxis("Vertical");
+    // Get movement input from the action-based system.
+    // NOTE: the API is getAxes() and returns a {x, y} pair -- there is no
+    // singular getAxis(). "Move" is a default action in the input map.
+    const { x: horizontal, y: vertical } = RE.Input.getAxes("Move");
 ${includeJump ? `
     // Handle jumping
     if (RE.Input.getDown("Jump") && this.isGrounded) {
@@ -104,17 +105,17 @@ import * as THREE from 'three';
 
 export default class ${name} extends RE.Component {
   // Movement settings
-  @RE.props.num(5)
+  @RE.props.num()
   moveSpeed: number = 5;
 
-  @RE.props.num(10)
+  @RE.props.num()
   rotationSpeed: number = 10;
 ${includeJump ? `
   // Jump settings
-  @RE.props.num(8)
+  @RE.props.num()
   jumpForce: number = 8;
 
-  @RE.props.num(20)
+  @RE.props.num()
   gravity: number = 20;
 
   private velocityY: number = 0;

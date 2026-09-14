@@ -22,7 +22,7 @@ export default class ${name} extends RE.Component {
   @RE.props.text("${selectableTag}")
   selectableTag: string = "${selectableTag}";
 
-  @RE.props.checkbox(true)
+  @RE.props.checkbox()
   highlightOnHover: boolean = true;
 
   @RE.props.color()
@@ -163,10 +163,10 @@ export default class ${name} extends RE.Component {
   @RE.props.prefab()
   prefab: RE.Prefab;
 
-  @RE.props.num(1)
+  @RE.props.num()
   spawnCount: number = 1;
 
-  @RE.props.num(0)
+  @RE.props.num()
   spawnDelay: number = 0;
 
   @RE.props.checkbox(${spawnOnStart})
@@ -175,7 +175,7 @@ export default class ${name} extends RE.Component {
   @RE.props.vector3()
   spawnAreaSize: THREE.Vector3 = new THREE.Vector3(10, 0, 10);
 
-  @RE.props.checkbox(true)
+  @RE.props.checkbox()
   randomRotation: boolean = true;
 
   // Track spawned instances
@@ -338,7 +338,7 @@ export default class ${name} extends RE.Component {
   @RE.props.checkbox(${autoGrow})
   autoGrow: boolean = ${autoGrow};
 
-  @RE.props.num(100)
+  @RE.props.num()
   maxSize: number = 100;
 
   // Pool storage
@@ -524,7 +524,7 @@ export default class ${name} extends RE.Component {
   // Cache for frequently queried results
   private cache: Map<string, { objects: THREE.Object3D[]; timestamp: number }> = new Map();
 
-  @RE.props.num(100)
+  @RE.props.num()
   cacheLifetimeMs: number = 100;
 
   awake() {
