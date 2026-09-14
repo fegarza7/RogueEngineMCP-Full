@@ -9,14 +9,15 @@
   },
   "scripts": {
     "build": "tsc",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "extract": "tsc -p tsconfig.tools.json && node .tools-build/tools/extract-engine-api.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.5.3"
+    "typescript": "~5.5.3"
   },
   "private": true
 }
