@@ -130,6 +130,7 @@ if (!tools.length) fail('tools/list returned nothing');
 else ok(`tools/list returned ${tools.length} tools`);
 
 const calls = [];
+const callTool = new Map(); // response id -> tool name
 let id = 10;
 const zeroArg = ['get_re_decorators', 'get_re_lifecycle', 'list_re_categories'];
 for (const name of zeroArg) {
@@ -153,12 +154,16 @@ if (tools.some(t => t.name === 'get_re_gotchas')) {
   calls.push({ jsonrpc: '2.0', id: id++, method: 'tools/call', params: { name: 'get_re_gotchas', arguments: {} } });
 }
 
+for (const c of calls) callTool.set(c.id, c.params.name);
+
 const results = await rpc(calls);
 let empties = 0;
 for (const r of results) {
   const text = r.result?.content?.[0]?.text ?? '';
   if (r.result?.isError) { fail(`tool call ${r.id} returned isError`); continue; }
   if (text.trim().length < 20) { empties++; continue; }
+  // get_re_gotchas exists to NAME removed APIs; scanning it for them is circular.
+  if (callTool.get(r.id) === "get_re_gotchas") continue;
   for (const b of BANNED) {
     // allow a deliberate teaching mention inside a comment line
     const offending = text.split('\n').filter(l => b.re.test(l) && !l.trim().startsWith('//') && !l.includes('REMOVED'));

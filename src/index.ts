@@ -18,7 +18,13 @@ import {
     formatCategories,
     formatSearchResults,
     searchDocs,
+    formatComponentInfo,
+    formatComponentList,
+    CLASS_NAMES,
+    COMPONENT_NAMES,
+    DECORATORS,
 } from './docs-data.js';
+import { formatGotchas, GOTCHAS } from './curated/gotchas.js';
 
 // Import template generators
 import { generatePlayerControllerTemplate } from './templates/input-templates.js';
@@ -148,7 +154,8 @@ const TOOLS: Tool[] = [
                 },
                 decorator: {
                     type: 'string',
-                    enum: ['num', 'text', 'checkbox', 'select', 'vector2', 'vector3', 'color', 'object3d', 'component', 'prefab', 'audio', 'material', 'texture'],
+                    // Derived from the generated API -- never hand-listed.
+                    enum: DECORATORS.map(d => d.name),
                     description: 'RE property decorator to use',
                     default: 'num',
                 },
@@ -172,7 +179,8 @@ const TOOLS: Tool[] = [
             properties: {
                 className: {
                     type: 'string',
-                    enum: ['App', 'Component', 'VisualComponent', 'Input', 'Mouse', 'Keyboard', 'TouchController', 'GamepadController', 'Prefab', 'Runtime', 'SceneController', 'Debug', 'Tags', 'AudioAsset', 'Functions', 'Events'],
+                    // Derived from the generated API -- never hand-listed.
+                    enum: [...CLASS_NAMES, ...COMPONENT_NAMES],
                     description: 'Name of the RE class to get info about',
                 },
             },
@@ -224,6 +232,49 @@ const TOOLS: Tool[] = [
     // -------------------------------------------------------------------------
     // SCAFFOLDING TOOLS (8)
     // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // BUILT-IN COMPONENTS & ENGINE KNOWLEDGE
+    // -------------------------------------------------------------------------
+    {
+        name: 'list_builtin_components',
+        description: 'List the engine\x27s built-in components (Character, Weapon, the UI* set, the Audio* set, OrbitCamera, ...) with a one-line summary each. Use get_builtin_component for full detail on one.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                group: {
+                    type: 'string',
+                    enum: ["Audio","CSS2D","Camera","Core","FX","HTMLMesh","UI","Weapon"],
+                    description: 'Only list components in this group',
+                },
+                search: { type: 'string', description: 'Filter by name or description' },
+            },
+        },
+    },
+    {
+        name: 'get_builtin_component',
+        description: 'Full API for one built-in engine component: properties, methods, statics and what it extends. Free-text name with fuzzy fallback.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'Component name, e.g. Character, UIButton, AudioPlayer3D' },
+            },
+            required: ['name'],
+        },
+    },
+    {
+        name: 'get_re_gotchas',
+        description: 'RogueEngine foot-guns: APIs that compile but are wrong, removed APIs and their replacements, and performance traps. Worth checking before writing engine code.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                topic: {
+                    type: 'string',
+                    enum: ["api","assets","audio","lifecycle","models","performance","raycasting"],
+                    description: 'Restrict to one topic',
+                },
+            },
+        },
+    },
     {
         name: 'create_picking_system',
         description: 'Create a tag-filtered object picking system with raycasting and hover highlighting',
@@ -714,21 +765,11 @@ RE.registerComponent(${name});
 }
 
 // Decorator mappings for add_component_property
-const DECORATOR_MAP: Record<string, string> = {
-    num: '@RE.props.num()',
-    text: '@RE.props.text()',
-    checkbox: '@RE.props.checkbox()',
-    select: '@RE.props.select()',
-    vector2: '@RE.props.vector2()',
-    vector3: '@RE.props.vector3()',
-    color: '@RE.props.color()',
-    object3d: '@RE.props.object3d()',
-    component: '@RE.props.component()',
-    prefab: '@RE.props.prefab()',
-    audio: '@RE.props.audio()',
-    material: '@RE.props.material()',
-    texture: '@RE.props.texture()',
-};
+// Derived from the generated decorator list, so a new engine decorator becomes
+// usable here the moment it is extracted -- no hand-editing, no drift.
+const DECORATOR_MAP: Record<string, string> = Object.fromEntries(
+    DECORATORS.map(d => [d.name, `@RE.props.${d.name}()`])
+);
 
 // ============================================================================
 // SERVER IMPLEMENTATION
@@ -992,6 +1033,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             // -----------------------------------------------------------------
             // SCAFFOLDING TOOLS
             // -----------------------------------------------------------------
+            case 'list_builtin_components': {
+                const { group, search } = args as { group?: string; search?: string };
+                return { content: [{ type: 'text', text: formatComponentList(group, search) }] };
+            }
+
+            case 'get_builtin_component': {
+                const { name: componentName } = args as { name: string };
+                return { content: [{ type: 'text', text: formatComponentInfo(componentName) }] };
+            }
+
+            case 'get_re_gotchas': {
+                const { topic } = args as { topic?: string };
+                return { content: [{ type: 'text', text: formatGotchas(topic) }] };
+            }
+
             case 'create_picking_system': {
                 const { name: componentName, directory, selectableTag = 'Selectable' } = args as {
                     name: string;

@@ -126,8 +126,13 @@ function cleanType(s: string): string {
 }
 const printType = (t: ts.Type, at?: ts.Node) => cleanType(checker.typeToString(t, at, TYPE_FLAGS));
 
+/** JSDoc {@link Foo} survives displayPartsToString as literal braces; unwrap it. */
+function unlink(t: string): string {
+  return t.replace(/\{@link\s+([^}|]+)(?:\|[^}]*)?\}/g, '$1').trim();
+}
+
 function docOf(sym: ts.Symbol): string {
-  return ts.displayPartsToString(sym.getDocumentationComment(checker)).replace(/\s+/g, ' ').trim();
+  return unlink(ts.displayPartsToString(sym.getDocumentationComment(checker)).replace(/\s+/g, ' ').trim());
 }
 function tagOf(sym: ts.Symbol, tag: string): string | undefined {
   const t = sym.getJsDocTags(checker).find(x => x.name === tag);
