@@ -1,7 +1,7 @@
 {
   "name": "rogueengine-mcp-full",
   "version": "1.0.0",
-  "description": "MCP server for RogueEngine game development with 18 tools",
+  "description": "MCP server for RogueEngine game development",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

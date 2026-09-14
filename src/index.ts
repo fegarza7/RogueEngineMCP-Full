@@ -37,7 +37,7 @@ import { FF_CLASS_INFO, FF_CATEGORIES, formatFFClassInfo } from './focusframewor
 import { generateFocusControllerTemplate } from './templates/focusframework-templates.js';
 
 // ============================================================================
-// TOOL DEFINITIONS (18 Total)
+// TOOL DEFINITIONS
 // ============================================================================
 
 const TOOLS: Tool[] = [
