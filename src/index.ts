@@ -269,7 +269,7 @@ const TOOLS: Tool[] = [
             properties: {
                 topic: {
                     type: 'string',
-                    enum: ["api","assets","audio","batching","lifecycle","models","performance","raycasting"],
+                    enum: ["api","assets","audio","batching","lifecycle","models","performance","raycasting","ui"],
                     description: 'Restrict to one topic',
                 },
             },

@@ -8,7 +8,7 @@
 
 export interface Gotcha {
   id: string;
-  topic: 'assets' | 'performance' | 'raycasting' | 'models' | 'audio' | 'lifecycle' | 'api' | 'batching';
+  topic: 'assets' | 'performance' | 'raycasting' | 'models' | 'audio' | 'lifecycle' | 'api' | 'batching' | 'ui';
   title: string;
   detail: string;
   wrong?: string;
@@ -314,6 +314,119 @@ RE.LoadingScreen.set(myScreen);`,
       'LoadingScreen.show() is called before the page\'s onload handler runs. A splash set from ' +
       'onload misses that first show(), and if the scene has no model stubs the engine shows no ' +
       'screen during play() at all — have your own screen hide the page splash when it takes over.',
+  },
+
+  // ── Built-in UI (1.3.0) ───────────────────────────────────────────────────
+  {
+    id: 'ui-style-after-super-awake',
+    topic: 'ui',
+    title: 'UIElement.awake() writes its own inline styles: style your element after super.awake()',
+    detail:
+      'On awake() a UI element writes inline styles from its properties: box-sizing border-box, ' +
+      'background, border, opacity, width/height (from widthMode/heightMode), padding, margin, ' +
+      'font, transform and display (from `visible`). UIContainer then sets flex-direction, gap, ' +
+      'align-items, overflow (from `scroll`) and position (from `place`). Anything a subclass ' +
+      'sets on `this.element.style` before super.awake() is overwritten. The property setters ' +
+      'write the style immediately and nothing re-applies them later, so styles set after ' +
+      'super.awake() stay. Subclassing UIContainer works like any component (register it with ' +
+      '@RE.registerComponent); an onBeforeRemoved() override must call super.onBeforeRemoved().',
+    wrong: `awake() {
+  this.element.style.padding = '0';  // overwritten by the engine
+  super.awake();
+}`,
+    right: `awake() {
+  super.awake();                     // engine styles first
+  this.element.style.padding = '0';  // then yours
+}`,
+  },
+  {
+    id: 'uicontainer-defaults',
+    topic: 'ui',
+    title: 'UIContainer is not a bare flexbox: column, centered, 0.4rem padding, overflow hidden',
+    detail:
+      'Defaults: flow "column", align "center", padding 0.4rem on both axes, gap 0, place "fill" ' +
+      '(position: relative), scroll "never" (overflow: hidden) and box-sizing: border-box. The ' +
+      'overflow clips anything positioned outside the box, such as dropdowns or tooltips. Any ' +
+      'cursor other than "inherit" is written with !important and beats your own inline cursor; ' +
+      'set cursor to "inherit" to let yours apply. Coming from the old HTMLUI package, whose ' +
+      'HTMLFlex was row, wrapping, unpadded and unclipped, each of these has to be undone.',
+    right: `super.awake();
+this.flow = 'row';
+this.align = 'normal';
+this.padding = new THREE.Vector2(0, 0);
+this.cursor = 'inherit';
+this.element.style.overflow = '';   // no property for "unclipped"
+this.element.style.flexWrap = 'wrap';`,
+  },
+  {
+    id: 'ui-padding-margin-vector2',
+    topic: 'ui',
+    title: 'UI padding and margin are Vector2 in rem, not CSS strings',
+    detail:
+      '`padding` and `margin` take a THREE.Vector2 (x = horizontal, y = vertical, in rem). A CSS ' +
+      'string does not work. For px values or four different sides, set this.element.style ' +
+      'after super.awake(). Also watch saved scene values: they are stored by property name, ' +
+      'so when a component\'s base class changes (for example from HTMLUI\'s HTMLFlex to ' +
+      'UIContainer), the old saved value of a same-named property is loaded into the new one ' +
+      'even when its type differs (padding "0" into a Vector2). Set those properties in awake() ' +
+      'or re-save the scene.',
+    wrong: `this.padding = '0 12px';`,
+    right: `this.padding = new THREE.Vector2(0.75, 0);  // rem
+// or, for px:
+this.element.style.padding = '0 12px';`,
+  },
+  {
+    id: 'ui-visible-not-display',
+    topic: 'ui',
+    title: 'Show and hide a UI element with `visible`; the GameObject\'s visible drives it too',
+    detail:
+      '`visible` writes display: none, or the element\'s own display value (flex for ' +
+      'containers). The engine also redefines `visible` on the element\'s Object3D, so ' +
+      'setting object3d.visible shows or hides the element as well. Disabling the component ' +
+      'removes the element from the DOM. HTMLUI\'s `display` property does not exist here. ' +
+      'Component.get() matches subclasses, so RE.UIElement.get(obj) finds any UI component, ' +
+      'including your own subclasses.',
+    wrong: `panel.display = false;       // HTMLUI property, does nothing on UIContainer`,
+    right: `const ui = RE.UIElement.get(obj);
+if (ui) ui.visible = false;`,
+  },
+  {
+    id: 'ui-navigation-claims-keys',
+    topic: 'ui',
+    title: 'Built-in UI navigation listens to arrows, Enter/Space, Escape and Q/E',
+    detail:
+      'The first UI element\'s start() boots a global keyboard/gamepad navigation loop. It acts ' +
+      'on elements marked `navigable`: arrows move focus, Enter/Space press, Escape cancels, ' +
+      'Q/E and [ ] cycle tabs and selectors, plus gamepad buttons. UIButton and UIInput are ' +
+      'navigable by default, and UITabs and UIDialog mark their own parts navigable. The loop ' +
+      'reads keys through RE.Input and does not consume them, so while a navigable element has ' +
+      'focus, the UI and your game both react to the same key. If your game uses those keys, ' +
+      'decide who owns them before adopting these widgets. With nothing navigable, the loop does nothing. ' +
+      'It also injects `#rogue-app :focus-visible { outline: none; box-shadow: none !important }`, ' +
+      'so an element reached with the Tab key shows no focus ring, and box-shadow focus styles on ' +
+      ':focus-visible are removed.',
+  },
+  {
+    id: 'ui-clicks-reach-input',
+    topic: 'ui',
+    title: 'A click on UI still reaches RE.Input: gate world clicks yourself',
+    detail:
+      'UI elements stop pointerup from bubbling (with capturePointer, also pointerdown and ' +
+      'click). RE.Input reads mousedown/mouseup on #rogue-app, and stopping pointerdown does not ' +
+      'stop the browser\'s mousedown that follows it. So RE.Input.mouse.isLeftButtonDown is true ' +
+      'when the player clicks a button, and world code reacts too (GitHub issue #8, open as of ' +
+      '1.3.0). Track whether the pointer is over UI and check it before acting on clicks. ' +
+      'Exclude the UI container itself: it spans the viewport, and contains() is true for the ' +
+      'node itself.',
+    right: `let overUI = false;
+window.addEventListener('pointermove', (e) => {
+  const ui = RE.Runtime.uiContainer;
+  const t = e.target as Node;
+  overUI = !!ui && t !== ui && ui.contains(t);
+}, { capture: true, passive: true });
+
+// in update():
+if (RE.Input.mouse.isLeftButtonDown && !overUI) { /* world click */ }`,
   },
 ];
 
