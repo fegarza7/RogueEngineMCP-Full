@@ -212,7 +212,8 @@ export default class ${name} extends RE.Component {
       return null;
     }
 
-    // Instantiate the prefab
+    // Instantiate the prefab. With no parent, instantiate() already adds it to the
+    // current scene — do not add() it again: a second add hides batched meshes.
     const instance = this.prefab.instantiate();
 
     // Calculate spawn position
@@ -224,8 +225,7 @@ export default class ${name} extends RE.Component {
       instance.rotation.y = Math.random() * Math.PI * 2;
     }
 
-    // Add to scene and track
-    RE.App.currentScene.add(instance);
+    // Track it (it is already in the scene)
     this.instances.push(instance);
 
     RE.Debug.log(\`Spawned \${instance.name} at \${spawnPos.x.toFixed(1)}, \${spawnPos.y.toFixed(1)}, \${spawnPos.z.toFixed(1)}\`);
@@ -378,9 +378,10 @@ export default class ${name} extends RE.Component {
   private createPoolObject(): THREE.Object3D | null {
     if (!this.prefab) return null;
 
+    // instantiate() already adds it to the current scene; adding it again would
+    // be a second add, which hides batched meshes.
     const obj = this.prefab.instantiate();
     obj.visible = false;
-    RE.App.currentScene.add(obj);
     return obj;
   }
 

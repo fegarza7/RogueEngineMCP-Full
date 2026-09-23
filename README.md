@@ -144,7 +144,7 @@ replacements, and performance traps. Worth checking before writing engine code.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `topic` | enum | No | `assets`, `performance`, `raycasting`, `models`, `audio`, `lifecycle`, `api` |
+| `topic` | enum | No | `assets`, `performance`, `raycasting`, `models`, `audio`, `lifecycle`, `api`, `batching` |
 
 ---
 

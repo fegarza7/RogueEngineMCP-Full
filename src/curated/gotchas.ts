@@ -8,7 +8,7 @@
 
 export interface Gotcha {
   id: string;
-  topic: 'assets' | 'performance' | 'raycasting' | 'models' | 'audio' | 'lifecycle' | 'api';
+  topic: 'assets' | 'performance' | 'raycasting' | 'models' | 'audio' | 'lifecycle' | 'api' | 'batching';
   title: string;
   detail: string;
   wrong?: string;
@@ -79,6 +79,24 @@ const obj = await RE.Model.instantiate(name);`,
       'Deleting or moving a source .glb/.fbx breaks every scene and prefab that references it.',
   },
   {
+    id: 'loaded-models-metalness-zero',
+    topic: 'models',
+    title: 'Loaded models have metalness forced to 0 — metallic parts look matte',
+    detail:
+      'The engine\'s model loader sets metalness = 0 on every material of every .glb and .fbx it ' +
+      'loads (AssetManager.removeMetalness), so armor, weapons and other metal authored in the ' +
+      'file render like plastic. Restore it in code after loading. Materials are shared by every ' +
+      'copy of a model, so set it once per model, not per instance. (FBX files are also scaled ' +
+      'by 0.01 on load.)',
+    right: `const model = await RE.Model.fetch(name);
+model?.source?.traverse(o => {
+  if ((o as THREE.Mesh).isMesh) {
+    const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial;
+    if ("metalness" in m) m.metalness = 1; // or the value authored in the file
+  }
+});`,
+  },
+  {
     id: 'audioasset-not-playable',
     topic: 'audio',
     title: 'AudioAsset has no play() — get the THREE.Audio, or use the AudioPlayer component',
@@ -137,6 +155,165 @@ modeOptions = ["Easy", "Hard"];`,
       'loaded yet. isReady becomes true once every asset referenced by the component interface ' +
       'has loaded, and start() only runs after that. Instantiating a prefab or reading a ' +
       'texture in awake() is the usual cause of intermittent null-asset bugs.',
+  },
+
+  // ── Batching (1.3.0) ──────────────────────────────────────────────────────
+  {
+    id: 'batching-second-add-hides-mesh',
+    topic: 'batching',
+    title: 'Adding a batched mesh to the scene a second time hides it for good',
+    detail:
+      'RE patches Object3D.add() and attach(), so every add hands the object to the batcher. ' +
+      'Once a batch exists for a mesh\'s geometry + material, the first add takes the mesh into ' +
+      'it: the batcher replaces `visible` with a getter that always returns false (the batch ' +
+      'draws it instead) and records that the game wants it shown. Add the SAME mesh again — ' +
+      're-parenting it, or re-adding it to its own parent — and the batcher records ' +
+      '`mesh.visible !== false`, which is now its own getter, so it records "hidden" and gives ' +
+      'the mesh a second slot. The mesh then never draws, but it can still be clicked, because ' +
+      'three\'s Raycaster tests layers, not visible. It only starts once a batch of that mesh ' +
+      'exists, so it tends to appear on the 3rd or 4th copy and looks random. ' +
+      'Batching.clear() or rebuild() brings the meshes back until the next re-add. ' +
+      'Build each copy off-scene and add it once, into the parent it will live under.',
+    wrong: `const copy = await RE.Model.instantiate(name); // no parent: added to the scene
+parent.add(copy);                              // second add: hidden once batched`,
+    right: `const stage = new THREE.Group();                      // never added to the scene
+const copy = await RE.Model.instantiate(name, stage); // the batcher ignores it here
+parent.add(copy);                                     // the only add`,
+  },
+  {
+    id: 'instantiate-attaches-to-scene',
+    topic: 'models',
+    title: 'instantiate() with no parent adds the copy to the scene; with a parent it keeps world transform',
+    detail:
+      'RE.Model.instantiate(name) and prefab.instantiate() with no parent call ' +
+      'App.currentScene.attach(copy): the copy is already in the scene when you get it, so ' +
+      'adding it to your own object afterwards is a second add (see the batching gotcha). ' +
+      'Passing the parent directly is not a drop-in fix: instantiate() uses attach(), which ' +
+      'keeps the copy\'s WORLD transform, so under a parent that is not at the origin the copy ' +
+      'stays at the world origin. Instantiate into a detached group, then add() it to the real ' +
+      'parent: add() keeps the local transform. The static RE.Prefab.instantiate(name) takes ' +
+      'no parent; use (await RE.Prefab.fetch(name)).instantiate(parent) for that.',
+    wrong: `// the copy stays at the world origin, not at parent's position
+const copy = await RE.Model.instantiate(name, parent);`,
+    right: `const copy = await RE.Model.instantiate(name, new THREE.Group());
+parent.add(copy); // local transform kept, one add`,
+  },
+  {
+    id: 'remove-destroys-components',
+    topic: 'lifecycle',
+    title: 'Object3D.remove() destroys the removed subtree\'s components',
+    detail:
+      'RE patches remove(): unless the object is being moved by an add()/attach() call, ' +
+      'removing it from its parent removes every component on it and its children. ' +
+      'Re-adding it later does not bring them back. To move an object, call newParent.add(obj) ' +
+      'directly — that detaches it from the old parent without the teardown — rather than ' +
+      'remove() followed by add(). If the object has batched meshes, that move is itself a ' +
+      'second add and hides them (see the batching gotchas): keep objects you move between ' +
+      'parents out of batching.',
+    wrong: `oldParent.remove(obj);   // components on obj are gone
+newParent.add(obj);`,
+    right: `newParent.add(obj);      // moves it, components intact`,
+  },
+  {
+    id: 'batching-exclude-and-schedule',
+    topic: 'batching',
+    title: 'Keep moving or temporary objects out of batching with your own schedule()',
+    detail:
+      'At scene start the engine schedules its own build of the whole scene, with no exclude, ' +
+      'right after components\' start(). A schedule() you issue in start() is overwritten; ' +
+      'issue it on the next frame (RE.onNextFrame) and every later automatic rebuild keeps your ' +
+      'exclude. The exclude predicate is asked about each object the batcher visits: during a ' +
+      'build it prunes whole subtrees, but when an object is added it is asked only about that ' +
+      'object and its descendants, NOT its ancestors — a mesh added directly under an excluded ' +
+      'parent slips through unless the predicate walks up the parents. Good candidates to ' +
+      'exclude: things that move every frame, placement previews, hidden holding groups, and ' +
+      'effects built from several meshes that share one geometry and material.',
+    right: `const exclude = (o: THREE.Object3D) => {
+  for (let n: THREE.Object3D | null = o; n; n = n.parent) if (n.userData.noBatch) return true;
+  return false;
+};
+RE.onNextFrame(() => RE.Batching.schedule({
+  root: RE.Runtime.scene, parent: RE.Runtime.scene, mode: "auto", exclude,
+}));`,
+  },
+  {
+    id: 'batching-rebuild-limit',
+    topic: 'batching',
+    title: 'Automatic rebuilds stop after 8 per schedule() — then material swaps stop showing',
+    detail:
+      'When a batched mesh\'s material, geometry or render flags change, the batcher marks it ' +
+      'out of date and rebuilds. It also rebuilds when 4 added meshes of one kind find no batch, ' +
+      'or 8 new meshes appear. All of these share a limit of 8 rebuilds per schedule() (the ' +
+      'rebuildBudget option of schedule()). After ' +
+      'that an out-of-date mesh stays hidden while its batch slot keeps drawing the OLD material ' +
+      '— e.g. dimming or highlighting by swapping materials quietly stops working. ' +
+      'schedule() resets the count and builds once the scene stops changing: call it after ' +
+      'bulk changes such as a level switch or a batch of material swaps.',
+  },
+  {
+    id: 'batching-misreadings',
+    topic: 'batching',
+    title: 'On a batched mesh, visible always reads false — and three other easy misreadings',
+    detail:
+      '(1) While the batcher owns a mesh, `mesh.visible` is a getter returning false; writes go ' +
+      'to the batcher\'s record, and that path works. Read what the game asked for with ' +
+      'RE.Batching.userVisible(mesh), and whether it reaches the screen with ' +
+      'RE.Batching.isDrawn(mesh). ' +
+      '(2) state().drawn counts owned meshes listed in a batch; it does not mean they render. ' +
+      '(3) repair() only restores meshes the batcher no longer owns. It cannot fix a mesh it ' +
+      'still owns but has recorded as hidden. ' +
+      '(4) setStatic(obj, true) means "transforms trusted, never synced": moving such an object ' +
+      'leaves its batch instance behind. Only use it for things that truly never move.',
+  },
+  {
+    id: 'raycast-hits-batch',
+    topic: 'raycasting',
+    title: 'A raycast hit can be the batch, not your mesh — resolve it before walking up',
+    detail:
+      'With batching, the source mesh stays in the scene (hidden but still raycastable) and the ' +
+      'batch is a real InstancedMesh at the same place, so a hit can report either. Walking up ' +
+      'hit.object\'s parents from the batch finds none of your objects. Resolve the hit first; ' +
+      'code that only reads hit.point is unaffected.',
+    wrong: `let node = hits[0].object;
+while (node && !node.userData.id) node = node.parent;`,
+    right: `let node = RE.Batching.sourceOfHit(hits[0]) ?? hits[0].object;
+while (node && !node.userData.id) node = node.parent;`,
+  },
+
+  // ── Loading screen (1.3.0) ────────────────────────────────────────────────
+  {
+    id: 'loading-screen-set-at-top-level',
+    topic: 'lifecycle',
+    title: 'RE.LoadingScreen.set() at the top of a script also replaces the EDITOR\'s loading screen',
+    detail:
+      'The editor loads your scripts too, and RE.LoadingScreen is one screen for the whole page. ' +
+      'Code at the top level of a file runs as soon as it loads — inside the editor as well — so ' +
+      'set() there makes the editor load its own scenes through your screen. If your hide() also ' +
+      'waits for your game to finish booting, the editor stays covered forever. Register your ' +
+      'screen from a component instead (awake() only runs when the game runs), give the editor ' +
+      'its screen back on stop, and let hide() always hide. To cover the very first scene load ' +
+      'in a build, use the custom build page (it only exists in builds): it can pass its own ' +
+      'splash to set() before the scene starts.',
+    wrong: `// top level of a script: also runs in the editor
+RE.LoadingScreen.set(myScreen);`,
+    right: `awake() {
+  RE.LoadingScreen.set(myScreen);
+  RE.LoadingScreen.show();
+  const s = RE.Runtime.onStop(() => { RE.LoadingScreen.set(); s.stop(); });
+}`,
+  },
+  {
+    id: 'onplay-before-models-load',
+    topic: 'lifecycle',
+    title: 'Runtime.onPlay fires before the scene\'s models load',
+    detail:
+      'play() fires onPlay first, then builds the scene\'s model stubs, then starts the scene ' +
+      '(hides the loading screen, then runs components\' awake()/start()). Hiding a page splash ' +
+      'on onPlay therefore leaves the engine\'s own loading screen showing in between. Also, in ' +
+      'a build the first scene load starts while build.js is still running, so ' +
+      'LoadingScreen.show() is called before the page\'s onload handler runs. A splash set from ' +
+      'onload misses that first show(), and if the scene has no model stubs the engine shows no ' +
+      'screen during play() at all — have your own screen hide the page splash when it takes over.',
   },
 ];
 
